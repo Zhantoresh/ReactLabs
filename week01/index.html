@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JavaScript Refresher — Task 0</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>JavaScript Refresher — Task 0</h1>
+  <p>React course · reviewing JavaScript fundamentals before React</p>
+</header>
+
+<main>
+
+  <!-- TASK 1 -->
+  <section class="task">
+    <h2><span class="num">1</span> Variables and Data Types</h2>
+    <pre class="code">const name = "Diana";
+let age = 22;
+let isActive = true;
+const courses = ["React", "JavaScript", "CSS"];
+const address = { city: "Almaty", street: "Abay 10" };
+
+let middleName = null;      // intentionally empty value
+let nickname;               // undefined — declared but not assigned</pre>
+    <div id="task1-result" class="result"></div>
+    <div class="explain">
+      <p><b>Primitive values:</b> <code>name</code>, <code>age</code>, <code>isActive</code>, <code>middleName</code>, <code>nickname</code> — store the value itself.</p>
+      <p><b>Reference values:</b> <code>courses</code> (array) and <code>address</code> (object) — the variable stores a reference to a memory location.</p>
+      <p><b>let vs const:</b> <code>let</code> allows reassigning the variable, <code>const</code> does not (though if it's an object/array, its contents can still be mutated).</p>
+      <p><b>typeof null</b> returns <code>"object"</code> — this is a historical bug in JS kept for backward compatibility.</p>
+      <p><b>JavaScript primitive types:</b> string, number, boolean, undefined, null, bigint, symbol.</p>
+    </div>
+    <div class="insight">
+      <span class="insight-label"> My insight</span>
+      I didn't expect <code>typeof null</code> to say <code>"object"</code> — it feels like a trap question. I also realized I've been using <code>undefined</code> and <code>null</code> almost interchangeably in my own code, but now I want to be more intentional: <code>null</code> when I'm the one deciding something is empty, <code>undefined</code> when it just hasn't been set yet.
+    </div>
+  </section>
+
+  <!-- TASK 2 -->
+  <section class="task">
+    <h2><span class="num">2</span> Arrays</h2>
+    <pre class="code">const numbers = [3, 7, 2, 10, 5];
+
+const doubled   = numbers.map(n => n * 2);
+const above5    = numbers.filter(n => n > 5);
+const firstAbove5 = numbers.find(n => n > 5);
+const sum       = numbers.reduce((acc, n) => acc + n, 0);
+const has10     = numbers.includes(10);</pre>
+    <div id="task2-result" class="result"></div>
+    <div class="explain">
+      None of these methods (<code>map</code>, <code>filter</code>, <code>find</code>, <code>reduce</code>, <code>includes</code>) mutate the original array — they all return a new value. You can confirm this by printing <code>numbers</code> again after all the operations: it stays the same.
+    </div>
+    <div class="insight">
+      <span class="insight-label"> My insight</span>
+      <code>reduce</code> was the one that took me longest to actually get comfortable with — <code>map</code> and <code>filter</code> felt intuitive right away, but <code>reduce</code> needed me to slow down and trace through the accumulator step by step. Once I did that on paper it clicked, and now I actually like how flexible it is — you can build a sum, an object, even another array out of it.
+    </div>
+  </section>
+
+  <!-- TASK 3 -->
+  <section class="task">
+    <h2><span class="num">3</span> Arrays of Objects</h2>
+    <pre class="code">const students = [
+  { id: 1, name: "Anna", grade: 85 },
+  { id: 2, name: "John", grade: 62 },
+  { id: 3, name: "Sara", grade: 91 },
+  { id: 4, name: "Mike", grade: 55 },
+];
+
+const passed        = students.filter(s => s.grade >= 70);
+const names          = students.map(s => s.name);
+const studentById3   = students.find(s => s.id === 3);
+const topStudent     = students.reduce((best, s) => s.grade > best.grade ? s : best);
+const average        = students.reduce((sum, s) => sum + s.grade, 0) / students.length;
+const withStatus     = students.map(s => ({ ...s, passed: s.grade >= 70 }));</pre>
+    <div id="task3-result" class="result"></div>
+    <div class="explain">
+      <code>map</code> combined with the spread operator <code>{ ...s, passed: ... }</code> creates a brand new object for every student — the original <code>students</code> array is left untouched.
+    </div>
+    <div class="insight">
+      <span class="insight-label"> My insight</span>
+      Chaining ideas from task 2 and applying them to objects instead of plain numbers made everything feel more "real" — this is basically what working with API data looks like. The pattern <code>{ ...item, newField }</code> inside <code>map</code> is something I can already see myself using constantly in React state updates.
+    </div>
+  </section>
+
+  <!-- TASK 4 -->
+  <section class="task">
+    <h2><span class="num">4</span> Objects</h2>
+    <pre class="code">const user = {
+  id: 1,
+  name: "Diana",
+  age: 22,
+  address: { city: "Almaty", street: "Abay 10" }
+};
+
+// read
+user.name; user.address.city;
+
+// change
+user.age = 23;
+
+// add
+user.email = "diana@mail.com";
+
+// remove
+delete user.address.street;
+
+// destructuring
+const { name: userName, age } = user;
+const { address: { city } } = user;</pre>
+    <div id="task4-result" class="result"></div>
+    <div class="explain">
+      When destructuring with <code>{ name: userName }</code>, the <code>name</code> property is read out, but it's assigned to a new variable called <code>userName</code> — the object's own field is not renamed.
+    </div>
+    <div class="insight">
+      <span class="insight-label"> My insight</span>
+      I always knew basic destructuring, but renaming a property while destructuring (<code>{ name: userName }</code>) was new to me — I used to just do <code>const userName = user.name</code> on a separate line. Nested destructuring (<code>{ address: { city } }</code>) also felt awkward at first, but it's genuinely shorter than writing <code>user.address.city</code> twice.
+    </div>
+  </section>
+
+  <!-- TASK 5 -->
+  <section class="task">
+    <h2><span class="num">5</span> Values and References</h2>
+    <pre class="code">let original = { name: "Alice", score: 10 };
+let copy = original;
+copy.score = 99;
+// original.score also becomes 99!
+
+let original2 = { name: "Alice", score: 10 };
+let properCopy = { ...original2 };
+properCopy.score = 50;
+// original2.score stays 10
+
+let user2 = { name: "Alice", address: { city: "Almaty" } };
+let shallowCopy = { ...user2 };
+shallowCopy.address.city = "Astana";
+// user2.address.city also changes — spread only copies the top level!
+
+let deepCopy = { ...user2, address: { ...user2.address } };
+deepCopy.address.city = "Shymkent";
+// now user2.address.city stays unchanged</pre>
+    <div id="task5-result" class="result"></div>
+    <div class="explain">
+      <b>Why this happens:</b> objects in JS are stored by reference. <code>copy = original</code> doesn't copy the object itself, only the memory address — both variables point to the very same object.<br><br>
+      <code>{ ...original }</code> creates a <b>shallow copy</b>: top-level properties are copied as values, but nested objects (<code>address</code>) are still a shared reference. To copy a nested object too, you need to spread it explicitly as well: <code>{ ...user, address: { ...user.address } }</code>, or use <code>structuredClone(user)</code>.
+    </div>
+    <div class="insight">
+      <span class="insight-label"> My insight</span>
+      This was the biggest "aha" of the whole refresher. I honestly didn't realize <code>{ ...user }</code> only does a shallow copy — I assumed spread just "duplicates everything." Seeing the nested <code>address.city</code> silently change on both objects was a little unsettling, but now I understand why React docs are so strict about not mutating nested state directly.
+    </div>
+  </section>
+
+  <!-- TASK 6 -->
+  <section class="task">
+    <h2><span class="num">6</span> Functions</h2>
+    <pre class="code">// regular function
+function isEven(number) {
+  return number % 2 === 0;
+}
+
+// arrow version of the same function
+const isEvenArrow = (number) => number % 2 === 0;
+
+function getFullName(firstName, lastName) {
+  return `${firstName} ${lastName}`;
+}
+
+const calculatePrice = (price, quantity) => price * quantity;
+
+const calculateDiscount = (price, percent) => price - (price * percent) / 100;
+
+const getMax = (a, b) => (a > b ? a : b);</pre>
+    <div id="task6-result" class="result"></div>
+    <div class="insight">
+      <span class="insight-label"> My insight</span>
+      Rewriting a normal function as an arrow function made me notice how much shorter one-line logic becomes — no <code>function</code> keyword, no <code>return</code>, no braces. But I want to be careful not to overuse the super-short form when a function does something non-obvious; sometimes the explicit <code>function</code> syntax reads clearer for someone reviewing my code later.
+    </div>
+  </section>
+
+  <!-- TASK 7 -->
+  <section class="task">
+    <h2><span class="num">7</span> Functions as Values</h2>
+    <pre class="code">const add = (a, b) => a + b;
+const multiply = (a, b) => a * b;
+
+function calculate(a, b, operation) {
+  return operation(a, b);
+}
+
+calculate(5, 3, add);       // 8
+calculate(5, 3, multiply);  // 15</pre>
+    <div id="task7-result" class="result"></div>
+    <div class="explain">
+      <p>Yes, functions are <b>first-class citizens</b> in JS: they can be stored in variables and passed to other functions as arguments (this is called a <b>higher-order function</b>).</p>
+      <p><code>add</code> is a reference to the function itself (it can be passed around without being called). <code>add()</code> is a <b>call</b> of the function, which immediately executes it and returns the result.</p>
+    </div>
+    <div class="insight">
+      <span class="insight-label"> My insight</span>
+      I've written <code>onClick={handleClick}</code> vs <code>onClick={handleClick()}</code> mistakes before without fully understanding why one worked and the other didn't — now the <code>add</code> vs <code>add()</code> distinction from this task makes that old bug make complete sense. Passing the function itself, not its result, is the whole trick.
+    </div>
+  </section>
+
+  <!-- TASK 8 -->
+  <section class="task">
+    <h2><span class="num">8</span> Scope</h2>
+    <pre class="code">const message = "global";
+
+function showScopes() {
+  let message = "function";
+  console.log(message); // "function"
+
+  if (true) {
+    let message = "block";
+    console.log(message); // "block"
+  }
+
+  console.log(message); // "function" — the block didn't affect the function scope
+}
+
+showScopes();
+console.log(message); // "global" — the function didn't affect the outer scope
+
+if (true) {
+  var varVal = "var value";
+  let letVal = "let value";
+  const constVal = "const value";
+}
+// varVal is accessible outside, letVal and constVal are not (ReferenceError)</pre>
+    <div id="task8-result" class="result"></div>
+    <div class="explain">
+      <p><b>Global scope</b> — a variable visible throughout the whole file/script.</p>
+      <p><b>Function scope</b> — a variable visible only inside the function where it was declared.</p>
+      <p><b>Block scope</b> — a variable visible only inside the <code>{ }</code> block (if, for, while, etc).</p>
+      <p><b>var</b> ignores block scope (it's only limited by function scope or global scope), while <b>let</b> and <b>const</b> respect block scope. The difference between <code>let</code> and <code>const</code> is whether reassignment is allowed.</p>
+    </div>
+    <div class="insight">
+      <span class="insight-label"> My insight</span>
+      Seeing <code>var</code> "leak" outside of the <code>if</code> block while <code>let</code> threw a <code>ReferenceError</code> made the difference concrete instead of just theoretical. I think this is exactly why <code>var</code> is considered outdated now — it's too easy to accidentally rely on a variable that "shouldn't" be accessible anymore.
+    </div>
+  </section>
+
+  <!-- TASK 9 -->
+  <section class="task">
+    <h2><span class="num">9</span> Closure</h2>
+    <pre class="code">function createCounter() {
+  let count = 0;
+  return function () {
+    count += 1;
+    return count;
+  };
+}
+
+const counter = createCounter();
+counter(); // 1
+counter(); // 2
+counter(); // 3
+
+const counter2 = createCounter(); // separate counter, its own count
+counter2(); // 1
+
+function createAdder(value) {
+  return function (num) {
+    return num + value;
+  };
+}
+
+const addFive = createAdder(5);
+addFive(10); // 15
+addFive(20); // 25</pre>
+    <div id="task9-result" class="result"></div>
+    <div class="explain">
+      The inner function keeps access to the outer function's variables even after the outer function has finished executing — this is called a <b>closure</b>. Every call to <code>createCounter()</code> creates a brand new, independent <code>count</code> variable inside its own lexical environment, so <code>counter</code> and <code>counter2</code> don't interfere with each other.
+    </div>
+    <div class="insight">
+      <span class="insight-label"> My insight</span>
+      This is the task that made <code>useState</code> stop feeling like magic. If a returned function can "remember" a variable from the function that created it, then a hook remembering state between renders isn't some special React trick — it's the same closure idea I just wrote by hand in <code>createCounter</code>.
+    </div>
+  </section>
+
+  <!-- TASK 10 -->
+  <section class="task">
+    <h2><span class="num">10</span> Destructuring, Spread and Rest</h2>
+    <pre class="code">const numbers = [10, 20, 30, 40];
+const [first, second] = numbers;
+
+const user = { id: 1, name: "Anna", age: 21 };
+const { name, age } = user;
+
+const withNewNumber = [...numbers, 50];
+const olderUser = { ...user, age: 22 };
+const userWithEmail = { ...user, email: "anna@mail.com" };
+
+const arrA = [1, 2];
+const arrB = [3, 4];
+const combined = [...arrA, ...arrB];
+
+function sum(...numbers) {
+  return numbers.reduce((acc, n) => acc + n, 0);
+}
+sum(1, 2);       // 3
+sum(1, 2, 3, 4); // 10</pre>
+    <div id="task10-result" class="result"></div>
+    <div class="explain">
+      <b>Spread (...)</b> "unpacks" the elements of an array/object — used when building a new array/object or passing arguments. <b>Rest (...)</b> does the opposite — it collects an arbitrary number of function arguments into a single array. The syntax looks the same, but the meaning is opposite: spread expands, rest gathers.
+    </div>
+    <div class="insight">
+      <span class="insight-label"> My insight</span>
+      I used to think spread and rest were just "the same three dots," so mixing them up in my head made destructuring code confusing to read. Framing it as "spread is on the right side / rest is on the left side (or in parameters)" is the mental shortcut that finally made it stick for me.
+    </div>
+  </section>
+
+  <!-- TASK 11 -->
+  <section class="task">
+    <h2><span class="num">11</span> Optional Chaining and Default Values</h2>
+    <pre class="code">const userWithAddress = { name: "Anna", address: { city: "Almaty" } };
+const userWithoutAddress = { name: "John" };
+
+// userWithoutAddress.address.city -> TypeError: Cannot read properties of undefined
+
+const cityA = userWithAddress.address?.city;         // "Almaty"
+const cityB = userWithoutAddress.address?.city;      // undefined
+
+const displayCityA = userWithAddress.address?.city ?? "City not specified";
+const displayCityB = userWithoutAddress.address?.city ?? "City not specified";
+
+// || vs ??
+[0, "", false, null, undefined].map(v => ({
+  value: v,
+  or:      v || "fallback",
+  nullish: v ?? "fallback",
+}));</pre>
+    <div id="task11-result" class="result"></div>
+    <div class="explain">
+      <code>?.</code> safely "short-circuits" a property access if the preceding value is <code>null</code>/<code>undefined</code>, returning <code>undefined</code> instead of throwing an error. <code>??</code> only substitutes a fallback value when the left side is <code>null</code> or <code>undefined</code>. <code>||</code>, on the other hand, treats any falsy value as "empty" — so <code>0</code>, <code>""</code>, and <code>false</code> also get replaced by the fallback, which is often not what you want. <code>??</code> is safer in those cases.
+    </div>
+    <div class="insight">
+      <span class="insight-label"> My insight</span>
+      The <code>0 || "fallback"</code> case genuinely surprised me — I can already think of a past bug where a quantity of <code>0</code> got silently replaced by a default value because I used <code>||</code> instead of <code>??</code>. This task basically explained a bug I didn't understand at the time.
+    </div>
+  </section>
+
+  <!-- FINAL TASK -->
+  <section class="task">
+    <h2><span class="num">★</span> Final Task</h2>
+    <pre class="code">const students = [
+  { id: 1, name: "Anna",  age: 20, grades: [85, 90, 78] },
+  { id: 2, name: "John",  age: 21, grades: [60, 55, 65] },
+  { id: 3, name: "Sara",  age: 22, grades: [91, 95, 89] },
+  { id: 4, name: "Mike",  age: 20, grades: [50, 48, 60] },
+  { id: 5, name: "Diana", age: 23, grades: [72, 80, 75] },
+];
+
+const getAverage = (grades) =>
+  grades.reduce((sum, g) => sum + g, 0) / grades.length;
+
+const getStudentAverage = (student) => getAverage(student.grades);
+
+const getPassedStudents = (students) =>
+  students.filter(s => getStudentAverage(s) >= 60);
+
+const getStudentNames = (students) => students.map(s => s.name);
+
+const findStudent = (students, id) => students.find(s => s.id === id);
+
+const getTopStudent = (students) =>
+  students.reduce((best, s) =>
+    getStudentAverage(s) > getStudentAverage(best) ? s : best
+  );
+
+const summary = students.map(s => ({
+  id: s.id,
+  name: s.name,
+  average: Number(getStudentAverage(s).toFixed(1)),
+  passed: getStudentAverage(s) >= 60,
+}));</pre>
+    <div id="final-result" class="result"></div>
+    <div class="note">All functions are pure: they don't mutate the <code>students</code> array or its objects — they return new values/arrays instead.</div>
+    <div class="insight">
+      <span class="insight-label"> My insight</span>
+      Building this out of small, single-purpose functions (<code>getAverage</code>, <code>getStudentAverage</code>, <code>getTopStudent</code>...) instead of one giant block of code made it way easier to debug — when something looked wrong, I could test each function on its own instead of untangling one long script. This feels like the "component" mindset from React showing up already, just with plain functions.
+    </div>
+  </section>
+
+  <section class="task">
+    <h2>Overall takeaways</h2>
+    <p>Individual insights are noted under each task above. Zooming out, the two ideas that connect almost everything here are <b>immutability</b> — not mutating arrays/objects directly, always returning new ones via spread or array methods — and <b>closures</b>, which quietly power things like counters and, it turns out, React's <code>useState</code>. Going into React, I want to keep leaning on <code>map</code>/<code>filter</code>/<code>reduce</code> and spread by default, and stay suspicious of any code that looks like it's mutating something in place.</p>
+  </section>
+
+</main>
+
+<footer>Task 0 — JavaScript Refresher · completed before the React course</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
