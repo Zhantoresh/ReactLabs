@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Departures — Async Task Board</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>Departures — Async Task Board</h1>
+  <p>Now boarding: closures, the call stack, promises, and the event loop</p>
+</header>
+
+<main>
+
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Scheduled Tasks</h2>
+      <button id="run-all-btn" class="btn btn-primary">Run All Tasks</button>
+    </div>
+
+    <div id="all-tasks-banner" class="banner banner-hidden"></div>
+
+    <div id="task-list" class="task-grid">
+
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Single Counter vs Multiple Counters</h2>
+      <button id="compare-btn" class="btn btn-primary">Run Comparison</button>
+    </div>
+    <div id="compare-results" class="compare-results">
+      Press "Run Comparison" to compare <code>await</code>-one-by-one (sequential)
+      against <code>Promise.all</code> (concurrent) across three simulated queue
+      steps: Check-in, Security, Boarding.
+    </div>
+  </section>
+  <!-- ============== Event Loop Demo ============== -->
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Event Loop Demo</h2>
+      <button id="event-loop-btn" class="btn btn-primary">Run Event Loop Demo</button>
+    </div>
+
+    <div class="event-loop-body">
+      <label class="predict-label" for="prediction-input">
+        Your predicted order (edit the letters below BEFORE running, then compare):
+      </label>
+      <textarea id="prediction-input" class="prediction-input" rows="2">A, B, C, D, E, F, G, H</textarea>
+
+      <div class="console-legend">
+        <span class="legend-item"><span class="legend-dot console-sync"></span>Synchronous (Call Stack)</span>
+        <span class="legend-item"><span class="legend-dot console-microtask"></span>Microtask (Promises / await)</span>
+        <span class="legend-item"><span class="legend-dot console-macrotask"></span>Macrotask (setTimeout)</span>
+      </div>
+
+      <div class="console-label">Live Console Feed</div>
+      <div id="console-feed" class="console-feed"></div>
+
+      <div id="event-loop-explanation" class="compare-results"></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>Departures Board · JavaScript Runtime &amp; Async homework</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
