@@ -1,0 +1,252 @@
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 64px 24px 48px;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+
+.header__photo {
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid var(--surface);
+  box-shadow: 0 8px 24px rgba(28, 28, 30, 0.12);
+  margin-bottom: 24px;
+}
+
+.header__name {
+  font-size: 34px;
+  margin-bottom: 8px;
+}
+
+.header__tagline {
+  color: var(--muted);
+  font-size: 15px;
+  margin: 0;
+}
+
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  margin-bottom: 24px;
+}
+
+.section__title {
+  font-size: 20px;
+  margin-bottom: 14px;
+  display: inline-block;
+}
+
+.section__title::after {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 3px;
+  background: var(--accent);
+  margin-top: 8px;
+  border-radius: 2px;
+}
+
+.about p {
+  margin: 0 0 12px;
+  color: var(--text);
+}
+
+.about p:last-child {
+  margin-bottom: 0;
+}
+
+.skills__list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+}
+
+.skills__pill {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 999px;
+}
+
+.contact__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.contact__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.contact__item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.contact__label {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.contact__value {
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.contact__value:hover {
+  text-decoration: underline;
+}
+
+.footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 40px;
+}
+
+.group {
+  margin-bottom: 20px;
+}
+
+.group:last-child {
+  margin-bottom: 0;
+}
+
+.group__title {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: 0 0 10px;
+  font-weight: 700;
+}
+
+.rating-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rating-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rating-item__title {
+  font-size: 15px;
+}
+
+.rating-item__score {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 12.5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+.artist-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.artist-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.artist-item__rank {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.artist-item__name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.album-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.album-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.album-item__rank {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.album-item__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.album-item__title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.album-item__meta {
+  font-size: 13px;
+  color: var(--muted);
+}
