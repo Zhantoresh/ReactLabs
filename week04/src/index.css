@@ -1,0 +1,54 @@
+:root {
+  --bg: #faf8f5;
+  --surface: #ffffff;
+  --surface-2: #f4f1ec;
+  --text: #1c1c1e;
+  --muted: #6b6b70;
+  --border: #e8e4dd;
+  --accent: #5b4fe0;
+  --accent-soft: #efedfc;
+  --radius: 14px;
+
+  --status-planned: #8a8a92;
+  --status-planned-bg: #f0f0f2;
+  --status-progress: #b8790a;
+  --status-progress-bg: #fdf1dc;
+  --status-done: #1f9d55;
+  --status-done-bg: #e5f7ec;
+
+  --danger: #d1453d;
+  --danger-soft: #fbe9e8;
+
+  --serif: "Playfair Display", Georgia, "Times New Roman", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.55;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--serif);
+  font-weight: 700;
+  margin: 0;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input {
+  font-family: inherit;
+}

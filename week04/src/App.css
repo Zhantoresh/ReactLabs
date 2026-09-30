@@ -1,0 +1,258 @@
+.dashboard {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 56px 24px 64px;
+}
+
+.dashboard__header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.dashboard__header h1 {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.dashboard__header p {
+  color: var(--muted);
+  font-size: 15px;
+  margin: 0;
+}
+
+/* ===== Add form ===== */
+.add-form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.add-form input {
+  flex: 1 1 180px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.add-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.add-form button[type='submit'] {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.add-form button[type='submit']:hover {
+  filter: brightness(1.08);
+}
+
+/* ===== Controls bar (filter + reverse) ===== */
+.controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  font-size: 12.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 2px;
+}
+
+.filter-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--text);
+  text-transform: capitalize;
+}
+
+.filter-btn:hover {
+  border-color: var(--accent);
+}
+
+.filter-btn--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn-reverse {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.btn-reverse:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ===== Empty state ===== */
+.empty-state {
+  text-align: center;
+  color: var(--muted);
+  padding: 40px 20px;
+  font-size: 14.5px;
+}
+
+/* ===== Project list & cards ===== */
+.project-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.project-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.project-card__header h2 {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+.project-card__category {
+  font-size: 12.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.status-badge {
+  align-self: flex-start;
+  border: none;
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-planned {
+  background: var(--status-planned-bg);
+  color: var(--status-planned);
+}
+
+.status-in-progress {
+  background: var(--status-progress-bg);
+  color: var(--status-progress);
+}
+
+.status-done {
+  background: var(--status-done-bg);
+  color: var(--status-done);
+}
+
+/* ===== Local state section ===== */
+.project-card__local-state {
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.session-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13.5px;
+}
+
+.notes-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 13px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.notes-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.reset-row {
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+}
+
+.btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-small {
+  flex: 1;
+  text-align: center;
+}
+
+.btn-remount {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-remove {
+  align-self: flex-start;
+  border-color: var(--danger-soft);
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.btn-remove:hover {
+  filter: brightness(0.96);
+  border-color: var(--danger);
+  color: var(--danger);
+}
