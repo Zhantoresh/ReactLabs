@@ -51,26 +51,44 @@ export async function getItemsList(query = "") {
     const page = Number(params.get("page")) || 1;
     const limit = Number(params.get("limit")) || 10;
 
+    const status = params.get("status");
+    const terminal = params.get("terminal");
+    const airline = params.get("airline");
+
     let items = readData();
 
-    // search by name and description
+    // search by flight number, route, airline and destination
     if (search) {
-      items = items.filter(
-        (item) =>
-          item.name.toLowerCase().includes(search.toLowerCase()) ||
-          item.description.toLowerCase().includes(search.toLowerCase()),
+      const q = search.toLowerCase();
+      items = items.filter((item) =>
+        [item.name, item.description, item.airline, item.destination]
+          .filter(Boolean)
+          .some((field) => String(field).toLowerCase().includes(q)),
       );
     }
-    //add other filter fields here
-    //...
-    //
 
-    // SORT by name
+    // FILTERS
+    if (status) {
+      items = items.filter((item) => item.status === status);
+    }
+    if (terminal) {
+      items = items.filter((item) => item.terminal === terminal);
+    }
+    if (airline) {
+      items = items.filter((item) => item.airline === airline);
+    }
+
+    // SORT
     items = [...items].sort((a, b) => {
       switch (sort) {
         case "name-desc":
           return b.name.localeCompare(a.name);
-
+        case "departure":
+          return String(a.departureTime).localeCompare(String(b.departureTime));
+        case "departure-desc":
+          return String(b.departureTime).localeCompare(String(a.departureTime));
+        case "passengers-desc":
+          return (Number(b.passengers) || 0) - (Number(a.passengers) || 0);
         case "name":
         default:
           return a.name.localeCompare(b.name);

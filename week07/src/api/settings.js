@@ -1,5 +1,5 @@
-//key to store data in localstorage
-export const DATA_KEY = "fake-init-data";
+//key to store data in localstorage (own key, so week06 data does not mix with week07)
+export const DATA_KEY = "departures-board-week07";
 
 //configs for fake API
 export const API_CONFIG = {
