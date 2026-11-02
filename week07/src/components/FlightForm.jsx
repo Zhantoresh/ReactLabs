@@ -1,6 +1,5 @@
 import { useState } from "react";
-
-const STATUSES = ["scheduled", "boarding", "delayed", "departed", "cancelled"];
+import { STATUSES } from "../utils/flights.js";
 
 const EMPTY = {
   name: "",
