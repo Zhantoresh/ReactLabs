@@ -1,5 +1,4 @@
-// All API requests of the app live here.
-// Pages and hooks call these functions and never touch fakeApi.js or localStorage directly.
+
 import { getItemsList, getItem, createItem, updateItem, deleteItem } from "../api/fakeApi.js";
 
 export const PAGE_SIZE = 8;
@@ -23,8 +22,7 @@ export function buildFlightsQuery(params) {
   return query.toString();
 }
 
-// List with search / filters / sorting / pagination.
-// Returns { data, total, page, limit, totalPages }.
+
 export function getFlights(query) {
   return getItemsList(query);
 }
@@ -50,7 +48,6 @@ export async function getFlight(id) {
 }
 
 
-// Returns { flight, warning }: warning is not empty if the second step failed.
 export async function createFlight(values) {
   const { name, description, ...extra } = values;
   const created = await createItem({ name, description });
@@ -71,4 +68,48 @@ export function updateFlight(id, changes) {
 
 export function deleteFlight(id) {
   return deleteItem(id);
+}
+
+
+export async function getAdjacentFlights(id) {
+  const flights = await getAllFlights(); // already sorted by departure time
+  const index = flights.findIndex((flight) => flight.id === Number(id));
+  if (index === -1) return { prev: null, next: null };
+  return {
+    prev: flights[index - 1] ?? null,
+    next: flights[index + 1] ?? null,
+  };
+}
+
+// ---------- Staff authentication (fake, for the demo) ----------
+
+
+const SESSION_KEY = "departures-board-week07-session";
+
+export const DEMO_ACCOUNT = { email: "dispatcher@ala.kz", password: "ala2026" };
+
+export async function login(email, password) {
+  // simulate a network request
+  await new Promise((resolve) => setTimeout(resolve, 600));
+
+  if (email.trim().toLowerCase() !== DEMO_ACCOUNT.email || password !== DEMO_ACCOUNT.password) {
+    throw new Error("Wrong email or password");
+  }
+
+  const user = { email: DEMO_ACCOUNT.email, name: "ALA Dispatcher" };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+  return user;
+}
+
+export function logout() {
+  localStorage.removeItem(SESSION_KEY);
+}
+
+
+export function getSession() {
+  try {
+    return JSON.parse(localStorage.getItem(SESSION_KEY)) ?? null;
+  } catch {
+    return null;
+  }
 }
