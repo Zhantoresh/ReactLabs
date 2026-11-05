@@ -3,21 +3,23 @@ import { Link, useLocation, useNavigate, useParams } from "react-router";
 import FlightForm from "../components/FlightForm.jsx";
 import StateMessage from "../components/StateMessage.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
+import { useAdjacentFlights } from "../hooks/useAdjacentFlights.js";
+import { useAuth } from "../hooks/useAuth.js";
 import { useFlight } from "../hooks/useFlight.js";
 import { deleteFlight, updateFlight } from "../services/service.js";
 import { formatDeparture, show, STATUS_ACTIONS } from "../utils/flights.js";
 
 export default function FlightDetailsPage() {
   const { id } = useParams();
-  // key={id}: when the URL changes from /flights/3 to /flights/5 React creates
-  // a fresh FlightDetails, so form / pending state of the old flight is reset.
   return <FlightDetails key={id} id={id} />;
 }
 
 function FlightDetails({ id }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth(); // staff controls are shown only to logged-in users
   const { flight, setFlight, status, error, reload } = useFlight(id);
+  const { prev, next } = useAdjacentFlights(id);
 
   const [isEditing, setIsEditing] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // null | "edit" | "status" | "delete"
@@ -167,33 +169,44 @@ function FlightDetails({ id }) {
           <div><dt>Status</dt><dd>{show(flight.status)}</dd></div>
         </dl>
 
-        <div className="status-actions">
-          <span className="status-actions__label">
-            {pendingAction === "status" ? "Updating status…" : "Change status:"}
-          </span>
-          {STATUS_ACTIONS.filter((action) => action.value !== flight.status).map((action) => (
-            <button
-              key={action.value}
-              className="btn btn--small"
-              onClick={() => handleChangeStatus(action.value)}
-              disabled={isBusy}
-            >
-              {action.label}
-            </button>
-          ))}
-        </div>
+        {user ? (
+          <>
+            <div className="status-actions">
+              <span className="status-actions__label">
+                {pendingAction === "status" ? "Updating status…" : "Change status:"}
+              </span>
+              {STATUS_ACTIONS.filter((action) => action.value !== flight.status).map((action) => (
+                <button
+                  key={action.value}
+                  className="btn btn--small"
+                  onClick={() => handleChangeStatus(action.value)}
+                  disabled={isBusy}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
 
-        <div className="details-card__actions">
-          <button className="btn" onClick={() => setIsEditing(true)} disabled={isBusy || isEditing}>
-            Edit
-          </button>
-          <button className="btn btn--danger" onClick={handleRemove} disabled={isBusy}>
-            {pendingAction === "delete" ? "Removing…" : "Remove"}
-          </button>
-        </div>
+            <div className="details-card__actions">
+              <button className="btn" onClick={() => setIsEditing(true)} disabled={isBusy || isEditing}>
+                Edit
+              </button>
+              <button className="btn btn--danger" onClick={handleRemove} disabled={isBusy}>
+                {pendingAction === "delete" ? "Removing…" : "Remove"}
+              </button>
+            </div>
+          </>
+        ) : (
+          <p className="staff-hint">
+            🔒 Status changes and editing are for airport staff.{" "}
+            <Link to="/login" state={{ from: location }}>
+              Log in as dispatcher
+            </Link>
+          </p>
+        )}
       </div>
 
-      {isEditing && (
+      {user && isEditing && (
         <FlightForm
           title={`Edit ${flight.name}`}
           submitLabel="Save"
@@ -203,6 +216,27 @@ function FlightDetails({ id }) {
           onCancel={() => setIsEditing(false)}
         />
       )}
+
+      <nav className="adjacent" aria-label="Neighbouring departures">
+        {prev ? (
+          <Link to={`/flights/${prev.id}`} className="adjacent__link">
+            <span className="adjacent__label">← Previous departure</span>
+            <span className="adjacent__flight">
+              {prev.name} · {formatDeparture(prev.departureTime).time} · {prev.destination}
+            </span>
+          </Link>
+        ) : (
+          <span />
+        )}
+        {next && (
+          <Link to={`/flights/${next.id}`} className="adjacent__link adjacent__link--next">
+            <span className="adjacent__label">Next departure →</span>
+            <span className="adjacent__flight">
+              {next.name} · {formatDeparture(next.departureTime).time} · {next.destination}
+            </span>
+          </Link>
+        )}
+      </nav>
     </section>
   );
 }

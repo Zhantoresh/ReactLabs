@@ -51,6 +51,20 @@
   color: var(--color-primary);
 }
 
+.navbar__user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 6px;
+}
+
+.navbar__user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
 /* Main area */
 .app__main {
   flex: 1;
