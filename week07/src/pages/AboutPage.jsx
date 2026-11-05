@@ -4,9 +4,11 @@ const ROUTES = [
   { path: "/", page: "Home" },
   { path: "/about", page: "About" },
   { path: "/flights", page: "Flights list (search, filters, sorting, pagination)" },
-  { path: "/flights/:id", page: "Flight details" },
-  { path: "/dashboard", page: "Dashboard" },
-  { path: "/login", page: "Login (placeholder)" },
+  { path: "/flights/new", page: "New flight (staff only)" },
+  { path: "/flights/:id", page: "Flight details (+ previous / next departure)" },
+  { path: "/board", page: "Live departures board (auto-refresh)" },
+  { path: "/dashboard", page: "Dashboard (staff only)" },
+  { path: "/login", page: "Staff login (demo account)" },
   { path: "*", page: "Not Found (404)" },
 ];
 
@@ -22,7 +24,8 @@ export default function AboutPage() {
         <p>
           Departures Board is a small single-page application for an airport departures board. It started as the
           “Async React: Effects &amp; API” homework (week06) and was extended with React Router: separate pages, nested
-          routes, dynamic URLs, filters stored in the URL and lazy-loaded pages.
+          routes, dynamic URLs, filters stored in the URL and lazy-loaded pages. On top of that it has a staff login with
+          protected routes and a live departures board like the screens in the airport.
         </p>
       </div>
 
@@ -66,6 +69,12 @@ export default function AboutPage() {
             </li>
             <li>
               <code>hooks/</code> — data loading with cleanup against stale requests
+            </li>
+            <li>
+              <code>context/</code> — AuthProvider: logged-in staff user for the whole app
+            </li>
+            <li>
+              <code>RequireAuth</code> — layout route that protects staff pages
             </li>
             <li>
               <code>services/service.js</code> — all API requests

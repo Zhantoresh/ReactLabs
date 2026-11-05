@@ -16,8 +16,8 @@ export default function HomePage() {
             <Link to="/flights" className="btn">
               Browse flights
             </Link>
-            <Link to="/dashboard" className="btn btn--ghost">
-              Open dashboard
+            <Link to="/board" className="btn btn--ghost">
+              Live board
             </Link>
             <Link to="/flights?status=delayed" className="btn btn--ghost">
               Delayed flights
@@ -32,9 +32,13 @@ export default function HomePage() {
           <h2>Flights</h2>
           <p>Search, two filters, sorting and pagination — all saved in the URL.</p>
         </Link>
+        <Link to="/board" className="feature">
+          <h2>Live board</h2>
+          <p>The airport departures screen, refreshed automatically every 30 seconds.</p>
+        </Link>
         <Link to="/dashboard" className="feature">
-          <h2>Dashboard</h2>
-          <p>Statistics and breakdowns by status and airline, filtered by terminal.</p>
+          <h2>Dashboard 🔒</h2>
+          <p>Statistics for airport staff: breakdowns by status and airline, filtered by terminal.</p>
         </Link>
         <Link to="/about" className="feature">
           <h2>About</h2>
