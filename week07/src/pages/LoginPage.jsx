@@ -1,23 +1,74 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
+import { useAuth } from "../hooks/useAuth.js";
+import { DEMO_ACCOUNT } from "../services/service.js";
 
-// Placeholder for future authentication: the form works as a controlled form,
-// but nothing is sent anywhere yet.
+// Staff login. Passengers can browse without an account;
+// creating, editing, changing status and the dashboard need a login.
 export default function LoginPage() {
+  const { user, login, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // where RequireAuth sent us from (e.g. /dashboard), if anywhere
+  const from = location.state?.from;
+  const redirectTo = from ? `${from.pathname}${from.search}` : "/dashboard";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
-    setSubmitted(true);
+    setSubmitting(true);
+    setError("");
+    try {
+      await login(email, password);
+      // replace: the login page should not stay in history
+      navigate(redirectTo, { replace: true });
+    } catch (err) {
+      setError(err.message);
+      setSubmitting(false);
+    }
+  }
+
+  function fillDemo() {
+    setEmail(DEMO_ACCOUNT.email);
+    setPassword(DEMO_ACCOUNT.password);
+    setError("");
+  }
+
+  if (user) {
+    return (
+      <section className="page login">
+        <div className="login__card">
+          <h1>You are logged in</h1>
+          <p className="muted">
+            Signed in as <strong>{user.name}</strong> ({user.email}).
+          </p>
+          <Link to="/dashboard" className="btn login__submit">
+            Open dashboard
+          </Link>
+          <button className="btn btn--ghost login__submit" onClick={logout}>
+            Log out
+          </button>
+        </div>
+      </section>
+    );
   }
 
   return (
     <section className="page login">
       <form className="login__card" onSubmit={handleSubmit}>
-        <h1>Log in</h1>
-        <p className="muted">Staff access to the departures board.</p>
+        <h1>Staff log in</h1>
+        <p className="muted">Dispatchers can add flights, edit them, change statuses and open the dashboard.</p>
+
+        {from && (
+          <p className="state state--info">
+            Log in to open <code>{from.pathname}</code>.
+          </p>
+        )}
 
         <label className="login__field">
           Email
@@ -26,6 +77,7 @@ export default function LoginPage() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="dispatcher@ala.kz"
+            autoComplete="username"
             required
           />
         </label>
@@ -37,20 +89,28 @@ export default function LoginPage() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             placeholder="••••••••"
+            autoComplete="current-password"
             required
           />
         </label>
 
-        <button className="btn login__submit" type="submit">
-          Log in
+        {error && <p className="state state--error">{error}</p>}
+
+        <button className="btn login__submit" type="submit" disabled={submitting}>
+          {submitting ? "Logging in…" : "Log in"}
         </button>
 
-        {submitted && (
-          <p className="state state--info">Authentication is not implemented yet — this page is a placeholder.</p>
-        )}
+        <div className="login__demo">
+          <span>
+            Demo account: <code>{DEMO_ACCOUNT.email}</code> / <code>{DEMO_ACCOUNT.password}</code>
+          </span>
+          <button type="button" className="btn btn--ghost btn--small" onClick={fillDemo}>
+            Fill in
+          </button>
+        </div>
 
         <p className="muted login__note">
-          No account needed for now. <Link to="/flights">Continue to flights →</Link>
+          Just looking? <Link to="/flights">Browse flights without an account →</Link>
         </p>
       </form>
     </section>

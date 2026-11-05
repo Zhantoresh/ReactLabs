@@ -1,17 +1,16 @@
-import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import FlightCard from "../components/FlightCard.jsx";
 import FlightFilters from "../components/FlightFilters.jsx";
-import FlightForm from "../components/FlightForm.jsx";
 import Pagination from "../components/Pagination.jsx";
 import StateMessage from "../components/StateMessage.jsx";
+import { useAuth } from "../hooks/useAuth.js";
 import { useFlightsList } from "../hooks/useFlightsList.js";
-import { createFlight, PAGE_SIZE } from "../services/service.js";
+import { PAGE_SIZE } from "../services/service.js";
 
 const FILTER_KEYS = ["search", "status", "terminal"];
 
 export default function FlightsPage() {
-  const navigate = useNavigate();
+  const { user } = useAuth();
 
   // The URL is the single source of truth for filters:
   // /flights?search=dubai&status=delayed&sort=departure&page=2
@@ -23,10 +22,6 @@ export default function FlightsPage() {
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
 
   const list = useFlightsList({ search, status, terminal, sort, page, limit: PAGE_SIZE });
-
-  const [isCreating, setIsCreating] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [createError, setCreateError] = useState("");
 
   // Change one URL parameter. Any filter change returns to page 1.
   function handleFilterChange(key, value) {
@@ -62,21 +57,6 @@ export default function FlightsPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  async function handleCreate(values) {
-    setSaving(true);
-    setCreateError("");
-    try {
-      const { flight, warning } = await createFlight(values);
-      // go to the new flight; the message is passed in navigation state
-      navigate(`/flights/${flight.id}`, {
-        state: { notice: warning || `Flight ${flight.name} was created.` },
-      });
-    } catch (err) {
-      setCreateError(`Create failed: ${err.message}`);
-      setSaving(false);
-    }
-  }
-
   const from = list.total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const to = Math.min(page * PAGE_SIZE, list.total);
 
@@ -88,29 +68,15 @@ export default function FlightsPage() {
           <p className="page__subtitle">All departures from Almaty International (ALA).</p>
         </div>
         <div className="page__actions">
-          <button className="btn" onClick={() => setIsCreating(true)} disabled={isCreating}>
-            New flight
-          </button>
+          {/* /flights/new is protected: without login RequireAuth sends you to /login and back */}
+          <Link to="/flights/new" className="btn" title={user ? "" : "Staff only — you will be asked to log in"}>
+            {user ? "+ New flight" : "🔒 New flight"}
+          </Link>
           <button className="btn btn--ghost" onClick={list.reload} disabled={list.status === "loading"}>
             Reload
           </button>
         </div>
       </div>
-
-      {createError && <StateMessage type="error" title={createError} />}
-
-      {isCreating && (
-        <FlightForm
-          title="New flight"
-          submitLabel="Create"
-          saving={saving}
-          onSubmit={handleCreate}
-          onCancel={() => {
-            setIsCreating(false);
-            setCreateError("");
-          }}
-        />
-      )}
 
       <FlightFilters
         search={search}
