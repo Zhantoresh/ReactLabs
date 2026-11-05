@@ -1,4 +1,3 @@
-// Shared constants and small helpers for flights (no React, no API here).
 
 export const STATUSES = ["scheduled", "boarding", "delayed", "departed", "cancelled"];
 
@@ -18,6 +17,16 @@ export const STATUS_ACTIONS = [
   { value: "delayed", label: "Mark delayed" },
   { value: "cancelled", label: "Cancel flight" },
 ];
+
+
+export const STATUS_REMARKS = {
+  scheduled: "On time",
+  boarding: "Boarding",
+  delayed: "Delayed",
+  departed: "Departed",
+  cancelled: "Cancelled",
+};
+
 
 export function show(value) {
   return value === "" || value === undefined || value === null ? "—" : value;
