@@ -102,11 +102,23 @@
   flex-wrap: wrap;
 }
 
+.details-card__badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.saving-hint {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
 .details-card__eyebrow {
   margin: 0;
   color: var(--color-primary);
   font-weight: 700;
 }
+
 
 .details-card__title {
   margin: 4px 0;

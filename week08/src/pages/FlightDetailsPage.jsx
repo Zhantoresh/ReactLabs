@@ -6,7 +6,7 @@ import StatusBadge from "../components/StatusBadge.jsx";
 import { useAdjacentFlights } from "../hooks/useAllFlights.js";
 import { useAuth } from "../hooks/useAuth.js";
 import { useFlight } from "../hooks/useFlight.js";
-import { useDeleteFlight, useUpdateFlight } from "../hooks/useFlightMutations.js";
+import { useChangeFlightStatus, useDeleteFlight, useUpdateFlight } from "../hooks/useFlightMutations.js";
 import { formatDeparture, show, STATUS_ACTIONS } from "../utils/flights.js";
 
 export default function FlightDetailsPage() {
@@ -21,6 +21,7 @@ function FlightDetails({ id }) {
   const { flight, status, error, reload } = useFlight(id);
   const { prev, next } = useAdjacentFlights(id);
   const updateMutation = useUpdateFlight();
+  const statusMutation = useChangeFlightStatus();
   const deleteMutation = useDeleteFlight();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -49,15 +50,17 @@ function FlightDetails({ id }) {
     }
   }
 
+  
   async function handleChangeStatus(newStatus) {
     if (isBusy) return;
     const flightId = flight.id;
+    const oldStatus = flight.status;
     setPendingAction("status");
     setActionError("");
     try {
-      await updateMutation.mutateAsync({ id: flightId, changes: { status: newStatus } });
+      await statusMutation.mutateAsync({ id: flightId, status: newStatus });
     } catch (err) {
-      setActionError(`Status update failed for flight #${flightId}: ${err.message}`);
+      setActionError(`Could not change status to "${newStatus}" (${err.message}). It was set back to "${oldStatus}".`);
     } finally {
       setPendingAction(null);
     }
@@ -151,7 +154,10 @@ function FlightDetails({ id }) {
             <h1 className="details-card__title">{flight.name}</h1>
             <p className="details-card__route">{flight.description}</p>
           </div>
-          <StatusBadge status={flight.status} updating={pendingAction === "status"} />
+          <div className="details-card__badges">
+            <StatusBadge status={flight.status} />
+            {pendingAction === "status" && <span className="saving-hint">saving…</span>}
+          </div>
         </div>
 
         <dl className="details-grid">
