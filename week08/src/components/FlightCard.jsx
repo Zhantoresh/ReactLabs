@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import FavoriteButton from "./FavoriteButton.jsx";
 import StatusBadge from "./StatusBadge.jsx";
 import { usePrefetchFlight } from "../hooks/usePrefetchFlight.js";
 import { formatDeparture, show } from "../utils/flights.js";
@@ -40,7 +41,8 @@ export default function FlightCard({ flight }) {
             <dd>{date}</dd>
           </div>
         </dl>
-      </Link>
+        </Link>
+      <FavoriteButton flightId={flight.id} />
     </div>
   );
 }

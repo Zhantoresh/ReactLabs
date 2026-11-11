@@ -42,6 +42,9 @@ export default function NavBar() {
         {/* while Firebase restores the session we do not know yet which buttons to show */}
         {loading ? null : user ? (
           <span className="navbar__user">
+            <NavLink to="/my-flights" className={linkClass}>
+              ★ My flights
+            </NavLink>
             <NavLink to="/profile" className={linkClass} title={user.email}>
               👤 Profile
             </NavLink>

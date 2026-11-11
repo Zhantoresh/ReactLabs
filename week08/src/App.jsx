@@ -14,6 +14,7 @@ const DashboardPage = lazy(() => import("./pages/DashboardPage.jsx"));
 const LoginPage = lazy(() => import("./pages/LoginPage.jsx"));
 const SignupPage = lazy(() => import("./pages/SignupPage.jsx"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage.jsx"));
+const MyFlightsPage = lazy(() => import("./pages/MyFlightsPage.jsx"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage.jsx"));
 
 export default function App() {
@@ -37,6 +38,7 @@ export default function App() {
         <Route element={<RequireAuth />}>
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="my-flights" element={<MyFlightsPage />} />
         </Route>
 
         {/* guests only: a signed-in user is redirected to /profile */}

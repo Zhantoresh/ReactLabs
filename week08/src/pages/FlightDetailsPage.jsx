@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import FlightForm from "../components/FlightForm.jsx";
+import FavoriteButton from "../components/FavoriteButton.jsx";
 import StateMessage from "../components/StateMessage.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import { useAdjacentFlights } from "../hooks/useAllFlights.js";
@@ -154,10 +155,14 @@ function FlightDetails({ id }) {
             <h1 className="details-card__title">{flight.name}</h1>
             <p className="details-card__route">{flight.description}</p>
           </div>
-          <div className="details-card__badges">
+                    <div className="details-card__badges">
             <StatusBadge status={flight.status} />
             {pendingAction === "status" && <span className="saving-hint">saving…</span>}
           </div>
+        </div>
+
+        <div className="details-card__fav">
+          <FavoriteButton flightId={flight.id} variant="button" />
         </div>
 
         <dl className="details-grid">
