@@ -1,8 +1,8 @@
-// All Firebase Authentication calls live here. UI components never call Firebase directly:
-// they use useAuth(), and AuthProvider uses these functions.
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendEmailVerification,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
@@ -25,13 +25,26 @@ export function logOut() {
   return signOut(auth);
 }
 
-// Calls `callback(user | null)` now and on every login / logout.
-// Returns the unsubscribe function (used as useEffect cleanup).
+
+export function resetPassword(email) {
+  return sendPasswordResetEmail(auth, email.trim());
+}
+
+export function sendVerificationEmail() {
+  return sendEmailVerification(auth.currentUser);
+}
+
+export async function reloadCurrentUser() {
+  await auth.currentUser?.reload();
+  return auth.currentUser;
+}
+
+
 export function subscribeToAuth(callback) {
   return onAuthStateChanged(auth, callback);
 }
 
-// Firebase error codes -> messages for the user
+
 const MESSAGES = {
   "auth/invalid-credential": "Wrong email or password.",
   "auth/wrong-password": "Wrong email or password.",
@@ -49,6 +62,7 @@ const MESSAGES = {
   "auth/unauthorized-domain":
     "This domain is not allowed in Firebase. Add it in Authentication → Settings → Authorized domains.",
   "auth/invalid-api-key": "Firebase API key is wrong. Check .env.local.",
+  "auth/missing-email": "Enter your email.",
 };
 
 export function authErrorMessage(error) {
