@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300" role="img" aria-label="Airplane taking off above a departures board">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5b4fe0"/>
+      <stop offset="1" stop-color="#a99ff5"/>
+    </linearGradient>
+  </defs>
+  <rect width="480" height="300" rx="24" fill="url(#sky)"/>
+  <circle cx="390" cy="70" r="34" fill="#ffe7a3" opacity="0.9"/>
+  <g fill="#ffffff" opacity="0.55">
+    <ellipse cx="90" cy="70" rx="46" ry="14"/>
+    <ellipse cx="300" cy="45" rx="38" ry="11"/>
+  </g>
+  <g transform="translate(250 110) rotate(-18)">
+    <path d="M-110 0 C-110 -12 -96 -16 -80 -16 L70 -16 C96 -16 116 -8 116 0 C116 8 96 16 70 16 L-80 16 C-96 16 -110 12 -110 0Z" fill="#ffffff"/>
+    <path d="M-10 -14 L-60 -78 L-36 -78 L36 -14Z" fill="#e3e0f5"/>
+    <path d="M-10 14 L-60 78 L-36 78 L36 14Z" fill="#e3e0f5"/>
+    <path d="M-100 -12 L-118 -46 L-102 -46 L-80 -14Z" fill="#e3e0f5"/>
+    <g fill="#5b4fe0">
+      <circle cx="-50" cy="-4" r="4"/><circle cx="-34" cy="-4" r="4"/><circle cx="-18" cy="-4" r="4"/>
+      <circle cx="-2" cy="-4" r="4"/><circle cx="14" cy="-4" r="4"/><circle cx="30" cy="-4" r="4"/>
+      <circle cx="46" cy="-4" r="4"/>
+    </g>
+    <path d="M92 -10 C104 -8 110 -4 112 0 L92 0Z" fill="#5b4fe0"/>
+  </g>
+  <g transform="translate(40 190)">
+    <rect width="400" height="90" rx="12" fill="#1d1b33"/>
+    <g font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#ffd166">
+      <text x="18" y="30">KC 935   ISTANBUL    06:45  DEPARTED</text>
+      <text x="18" y="54" fill="#8ce99a">FZ 412   DUBAI       11:10  BOARDING</text>
+      <text x="18" y="78" fill="#ff9f9f">TK 351   ISTANBUL    12:40  DELAYED</text>
+    </g>
+  </g>
+</svg>
