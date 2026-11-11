@@ -1,37 +1,29 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getAllFlights } from "../services/service.js";
+import { flightKeys } from "../services/queryClient.js";
 
-export function useAllFlights() {
-  const [flights, setFlights] = useState([]);
-  const [status, setStatus] = useState("loading"); // "loading" | "error" | "success"
-  const [error, setError] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
+export function useAllFlights(options = {}) {
+  const query = useQuery({
+    queryKey: flightKeys.everything(),
+    queryFn: getAllFlights,
+    refetchInterval: options.refetchInterval,
+  });
 
-  useEffect(() => {
-    let ignore = false;
-    setStatus("loading");
-    setError("");
+  return {
+    flights: query.data ?? [],
+    status: query.isPending ? "loading" : query.isError && !query.data ? "error" : "success",
+    error: query.error?.message ?? "",
+    updatedAt: query.dataUpdatedAt || null, 
+    isFetching: query.isFetching,
+    refreshFailed: query.isError && Boolean(query.data), 
+    reload: () => query.refetch(),
+  };
+}
 
-    getAllFlights()
-      .then((data) => {
-        if (ignore) return;
-        setFlights(data);
-        setStatus("success");
-      })
-      .catch((err) => {
-        if (ignore) return;
-        setError(err.message);
-        setStatus("error");
-      });
 
-    return () => {
-      ignore = true;
-    };
-  }, [reloadKey]);
-
-  function reload() {
-    setReloadKey((key) => key + 1);
-  }
-
-  return { flights, status, error, reload };
+export function useAdjacentFlights(id) {
+  const { flights } = useAllFlights();
+  const index = flights.findIndex((flight) => flight.id === Number(id));
+  if (index === -1) return { prev: null, next: null };
+  return { prev: flights[index - 1] ?? null, next: flights[index + 1] ?? null };
 }

@@ -1,39 +1,23 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getFlight, NotFoundError } from "../services/service.js";
+import { flightKeys } from "../services/queryClient.js";
 
 export function useFlight(id) {
-  const [flight, setFlight] = useState(null);
-  const [status, setStatus] = useState("loading"); // "loading" | "error" | "notfound" | "success"
-  const [error, setError] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
+  const query = useQuery({
+    queryKey: flightKeys.detail(id),
+    queryFn: () => getFlight(id),
+    retry: (failureCount, error) => !(error instanceof NotFoundError) && failureCount < 1,
+  });
 
-  useEffect(() => {
-    let ignore = false;
-    setFlight(null);
-    setStatus("loading");
-    setError("");
+  let status = "success";
+  if (query.isPending) status = "loading";
+  else if (query.error instanceof NotFoundError) status = "notfound";
+  else if (query.isError && !query.data) status = "error";
 
-    getFlight(id)
-      .then((item) => {
-        if (ignore) return; 
-        setFlight(item);
-        setStatus("success");
-      })
-      .catch((err) => {
-        if (ignore) return;
-        setError(err.message);
-        setStatus(err instanceof NotFoundError ? "notfound" : "error");
-      });
-
-    return () => {
-      ignore = true;
-    };
-  }, [id, reloadKey]);
-
-  function reload() {
-    setReloadKey((key) => key + 1);
-  }
-
-
-  return { flight, setFlight, status, error, reload };
+  return {
+    flight: query.data ?? null,
+    status,
+    error: query.error?.message ?? "",
+    reload: () => query.refetch(),
+  };
 }
