@@ -1,18 +1,29 @@
-# Task 5 — Routing & Application Architecture (Departures Board)
+# Task 6 — Server Data, Caching & Firebase Authentication (Departures Board)
 
-The week06 departures board extended with React Router: separate pages, nested routes,
-dynamic URLs, filters in the URL and lazy-loaded pages. Extra features: staff login with
-protected routes, a live departures board and previous/next departure navigation.
+The week07 departures board (React Router, nested routes, filters in the URL, lazy pages, live board)
+extended with **Firebase Authentication** (email/password + Google), **environment variables** and
+**server-data caching with TanStack Query**. All routes, filters, pagination and features from week07 are kept.
 
-- Deployed: https://zhantoresh.github.io/ReactLabs/week07/
-- Repo: https://github.com/Zhantoresh/ReactLabs (folder `week07`)
-- Demo staff account: `dispatcher@ala.kz` / `ala2026`
+- Deployed: https://zhantoresh.github.io/ReactLabs/week08/
+- Repo: https://github.com/Zhantoresh/ReactLabs (folder `week08`)
 
 ## Run locally
 
-    cd week07
+    cd week08
     npm install
+    cp .env.example .env.local   # then put your Firebase web-app config into .env.local
     npm run dev
+
+`.env.local` is in `.gitignore` and is never committed. `.env.example` shows which variables are needed.
+Vite exposes only variables that start with `VITE_` (read through `import.meta.env`).
+
+## Firebase setup
+
+1. Firebase console → create a project → add a **Web app** → copy its config into `.env.local`.
+2. Authentication → Sign-in method → enable **Email/Password** and **Google**.
+3. Authentication → Settings → Authorized domains → add `zhantoresh.github.io` (for the deployed version).
+
+Firebase is initialized once in `src/firebase.js`. All auth calls are in `src/services/auth.js`.
 
 ## Routes
 
@@ -20,63 +31,86 @@ protected routes, a live departures board and previous/next departure navigation
 | --- | --- | --- |
 | `/` | Home | public |
 | `/about` | About the project | public |
-| `/flights` | Flights list (search, 2 filters, sorting, pagination) | public |
-| `/flights/new` | New flight | staff |
-| `/flights/:id` | Flight details (+ previous / next departure) | public, editing for staff |
-| `/board` | Live departures board | public |
-| `/dashboard` | Dashboard | staff |
-| `/login` | Staff login | public |
+| `/flights` | Flights list (search, 2 filters, sorting, pagination in the URL) | public |
+| `/flights/new` | New flight | signed in |
+| `/flights/:id` | Flight details (+ previous / next departure) | public, editing when signed in |
+| `/board` | Live departures board (auto-refresh) | public |
+| `/dashboard` | Dashboard with statistics | signed in |
+| `/profile` | Email, UID, account info, logout | signed in |
+| `/login` | Email/password login, Google sign-in | guests only |
+| `/signup` | Email, password, confirm password with validation, Google | guests only |
 | `*` | Not Found (404) | public |
 
-`HashRouter` is used, so URLs look like `…/week07/#/flights/3?…`.
-GitHub Pages serves only real files; with the route after `#` every direct URL,
-refresh and Back/Forward loads `index.html`, and React Router reads the route from the hash.
+`HashRouter` is used (`…/week08/#/flights/3`), so direct URLs and refresh work on GitHub Pages.
+
+## Authentication
+
+- `AuthProvider` (`src/context/AuthProvider.jsx`) subscribes to Firebase with `onAuthStateChanged`
+  and keeps `user` and `loading` in state; `useAuth()` gives them (plus `signUp`, `logIn`,
+  `logInWithGoogle`, `logOut`) to any component.
+- **Persistent sessions:** Firebase saves the session (`browserLocalPersistence`), and after a refresh
+  `onAuthStateChanged` restores the user. While that happens `loading` is `true`.
+- **Protected routes:** `RequireAuth` (layout route) waits while `loading`, then either renders the page
+  or redirects to `/login` with `state={{ from: location }}`; after login the user returns to that page.
+  `GuestOnly` sends a signed-in user away from `/login` and `/signup`.
+- **NavBar:** shows *Log in / Sign up* for guests and *Profile / Log out* for signed-in users.
+- **Errors:** Firebase error codes are turned into readable messages (`authErrorMessage` in `services/auth.js`).
+
+## Caching strategy (TanStack Query)
+
+Cache settings and query keys are in `src/services/queryClient.js`; hooks in `src/hooks/` use them.
+
+| Query key | Data | Used by |
+| --- | --- | --- |
+| `["flights", "list", { search, status, terminal, sort, page, limit }]` | one page of the list | Flights page |
+| `["flights", "detail", id]` | one flight | Flight details |
+| `["flights", "all"]` | all flights sorted by time | Dashboard, Live board, previous/next links |
+
+**Expiration / revalidation**
+
+- `staleTime: 60 s` — cached data is shown instantly and not refetched for 60 seconds
+  (e.g. going back to a list page or a flight you just opened).
+- After 60 s the data is *stale*: it is still shown at once, and a background request refreshes it
+  when the query is used again or the window regains focus.
+- `gcTime: 5 min` — cache entries that no page uses are removed from memory after 5 minutes.
+- The live board refetches `["flights", "all"]` every 30 s (`refetchInterval`) while it is open.
+- `retry: 1` — a failed request (the fake API fails ~5% of the time) is retried once before showing an error.
+
+**When the cache is invalidated**
+
+| Operation | What happens to the cache |
+| --- | --- |
+| Create a flight | the new flight is put into `["flights", "detail", id]`; all lists and `["flights", "all"]` are invalidated |
+| Edit / change status | the returned flight replaces `["flights", "detail", id]`; all lists and `["flights", "all"]` are invalidated |
+| Delete a flight | its detail entry is marked stale (next visit shows "not found"); all lists and `["flights", "all"]` are invalidated |
+
+Invalidated queries that are on screen refetch immediately; the others refetch the next time they are opened.
+The mutations are in `src/hooks/useFlightMutations.js`.
+
+**Outdated requests** — each filter combination has its own query key, so a late response for old filters
+is stored under the old key and never replaces the list for the current filters. `placeholderData:
+keepPreviousData` keeps the previous page on screen while the next one loads.
+
+**States** — every page handles loading, error (with *Try again*), empty results and "not found";
+if a background refresh fails, the cached data stays on screen with a warning.
 
 ## Structure
 
     src/
-      App.jsx              routes only (nested routes, protected routes, React.lazy)
-      main.jsx             HashRouter + AuthProvider + global styles
+      firebase.js          Firebase app + auth (config from import.meta.env)
+      App.jsx              routes only (nested, protected, guest-only, React.lazy)
+      main.jsx             QueryClientProvider + HashRouter + AuthProvider
       layouts/RootLayout   NavBar + <Suspense><Outlet/></Suspense> + footer
-      pages/               Home, About, Flights, NewFlight, FlightDetails, Board, Dashboard, Login, NotFound
-      components/          NavBar, RequireAuth, FlightCard, FlightFilters, FlightForm, Pagination,
-                           StatusBadge, StateMessage, PageLoader
-      context/             AuthContext + AuthProvider (logged-in staff user)
-      hooks/               useFlightsList, useFlight, useAllFlights, useAdjacentFlights,
-                           useLiveFlights, useNow, useAuth (effects with cleanup)
-      services/service.js  all API requests + fake staff login
-      api/                 fake API (status/terminal/airline filters and extra sorts added),
-                           settings, seed data (40 flights)
+      pages/               Home, About, Flights, NewFlight, FlightDetails, Board, Dashboard,
+                           Login, Signup, Profile, NotFound
+      components/          NavBar, RequireAuth, GuestOnly, GoogleButton, FlightCard, FlightFilters,
+                           FlightForm, Pagination, StatusBadge, StateMessage, PageLoader
+      context/             AuthContext + AuthProvider
+      hooks/               useAuth, useFlightsList, useFlight, useAllFlights (+ useAdjacentFlights),
+                           useFlightMutations, useNow
+      services/            service.js (flight API), auth.js (Firebase auth), queryClient.js (cache + keys)
+      api/                 fake API, settings, seed data (40 flights)
       utils/flights.js     constants and formatting helpers
       styles/              global, layout, components, pages
 
-## Required features
-
-- **Flights**: reusable `FlightCard`, search + status filter + terminal filter + sorting + pagination.
-  All of them live in the URL (`useSearchParams`), so links, refresh and Back/Forward keep them.
-  Loading / error (Try again) / empty / "page does not exist" states.
-- **Flight details**: `useParams` + `getFlight(id)`; 11 fields; Back and All flights links;
-  loading, error with retry, not found (missing or invalid id like `/flights/abc`).
-  Stale requests are ignored (`ignore` flag in the effect cleanup) and the page component
-  gets `key={id}`, so switching flights resets its state.
-- **Dashboard**: 5 statistics from API data, breakdowns by status and by airline,
-  terminal filter (also in the URL) that recalculates everything, links to filtered lists and flights.
-- **Lazy loading**: About, FlightDetails, NewFlight, Board, Dashboard, Login and NotFound
-  with `React.lazy` + `Suspense` (in RootLayout).
-- **404** page with a Home link.
-- Everything from week06 is kept: create, edit, change status, remove, reload, error handling.
-
-## Extra features
-
-- **Staff login and protected routes.** The Login placeholder became a working (fake) staff login.
-  `RequireAuth` is a layout route: without login it redirects to `/login` with
-  `state={{ from: location }}`, and after login the user is sent back to the page they wanted.
-  `/dashboard` and `/flights/new` are protected; on the flight page status/edit/remove buttons
-  are shown only to staff. The user is shared through Context (`AuthProvider` + `useAuth`),
-  the session is saved, so a refresh does not log you out.
-- **Live departures board (`/board`).** A public airport-style screen with all departures,
-  terminal tabs in the URL, a clock and auto-refresh every 30 s (`setInterval` in `useEffect`,
-  cleared in cleanup). If a background refresh fails, the board keeps the previous data and shows a warning.
-- **Previous / next departure** links on the flight page (dynamic URLs `/flights/:id`).
-
-The fake API uses its own localStorage key (`departures-board-week07`), so week06 data is not mixed in.
+UI components never call the API, Firebase or `localStorage` directly — only through hooks and services.
