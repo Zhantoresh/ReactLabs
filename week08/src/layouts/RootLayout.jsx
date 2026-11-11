@@ -16,7 +16,7 @@ export default function RootLayout() {
       </main>
 
       <footer className="app__footer">
-        Departures Board · React Router homework · Almaty International (ALA)
+        Departures Board · React Router, TanStack Query &amp; Firebase Auth · Almaty International (ALA)
       </footer>
     </div>
   );

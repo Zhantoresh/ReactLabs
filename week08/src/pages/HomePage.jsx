@@ -38,7 +38,7 @@ export default function HomePage() {
         </Link>
         <Link to="/dashboard" className="feature">
           <h2>Dashboard 🔒</h2>
-          <p>Statistics for airport staff: breakdowns by status and airline, filtered by terminal.</p>
+          <p>For signed-in users: statistics and breakdowns by status and airline, filtered by terminal.</p>
         </Link>
         <Link to="/about" className="feature">
           <h2>About</h2>
