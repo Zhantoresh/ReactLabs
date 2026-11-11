@@ -55,6 +55,13 @@
 .badge--cancelled { background: #fdecec; color: #a12525; }
 
 /* Flight card */
+.card-wrap {
+  position: relative;
+}
+
+.card-wrap .card {
+  height: 100%;
+}
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
