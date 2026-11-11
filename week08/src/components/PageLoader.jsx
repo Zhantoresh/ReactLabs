@@ -1,3 +1,3 @@
-export default function PageLoader() {
-  return <p className="state state--loading">Loading page…</p>;
+export default function PageLoader({ text = "Loading page…" }) {
+  return <p className="state state--loading">{text}</p>;
 }
