@@ -15,7 +15,12 @@ export const queryClient = new QueryClient({
 export const flightKeys = {
   all: ["flights"],
   lists: () => ["flights", "list"],
-  list: (params) => ["flights", "list", params], 
+  list: (params) => ["flights", "list", params],
   everything: () => ["flights", "all"], 
   detail: (id) => ["flights", "detail", String(id)],
+};
+
+export const favoriteKeys = {
+  all: ["favorites"],
+  byUser: (uid) => ["favorites", uid],
 };
