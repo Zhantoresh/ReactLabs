@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import FlightForm from "../components/FlightForm.jsx";
 import StateMessage from "../components/StateMessage.jsx";
-import { createFlight } from "../services/service.js";
+import { useCreateFlight } from "../hooks/useFlightMutations.js";
 
 
 export default function NewFlightPage() {
   const navigate = useNavigate();
+  const createMutation = useCreateFlight();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -14,8 +15,7 @@ export default function NewFlightPage() {
     setSaving(true);
     setError("");
     try {
-      const { flight, warning } = await createFlight(values);
-      
+      const { flight, warning } = await createMutation.mutateAsync(values);
       navigate(`/flights/${flight.id}`, {
         replace: true,
         state: { notice: warning || `Flight ${flight.name} was created.` },

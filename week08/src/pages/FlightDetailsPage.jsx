@@ -3,10 +3,10 @@ import { Link, useLocation, useNavigate, useParams } from "react-router";
 import FlightForm from "../components/FlightForm.jsx";
 import StateMessage from "../components/StateMessage.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
-import { useAdjacentFlights } from "../hooks/useAdjacentFlights.js";
+import { useAdjacentFlights } from "../hooks/useAllFlights.js";
 import { useAuth } from "../hooks/useAuth.js";
 import { useFlight } from "../hooks/useFlight.js";
-import { deleteFlight, updateFlight } from "../services/service.js";
+import { useDeleteFlight, useUpdateFlight } from "../hooks/useFlightMutations.js";
 import { formatDeparture, show, STATUS_ACTIONS } from "../utils/flights.js";
 
 export default function FlightDetailsPage() {
@@ -17,9 +17,11 @@ export default function FlightDetailsPage() {
 function FlightDetails({ id }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth(); // staff controls are shown only to logged-in users
-  const { flight, setFlight, status, error, reload } = useFlight(id);
+  const { user } = useAuth(); 
+  const { flight, status, error, reload } = useFlight(id);
   const { prev, next } = useAdjacentFlights(id);
+  const updateMutation = useUpdateFlight();
+  const deleteMutation = useDeleteFlight();
 
   const [isEditing, setIsEditing] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // null | "edit" | "status" | "delete"
@@ -27,20 +29,18 @@ function FlightDetails({ id }) {
   const isBusy = pendingAction !== null;
   const notice = location.state?.notice ?? "";
 
-  // "Back" goes to the previous page (keeps list filters).
-  // If the page was opened directly (no history inside the app), go to the list.
+
   function handleBack() {
     if (location.key !== "default") navigate(-1);
     else navigate("/flights");
   }
 
   async function handleEdit(values) {
-    const flightId = flight.id; // remember the id before await
+    const flightId = flight.id; 
     setPendingAction("edit");
     setActionError("");
     try {
-      const updated = await updateFlight(flightId, values);
-      setFlight((prev) => (prev && prev.id === updated.id ? updated : prev));
+      await updateMutation.mutateAsync({ id: flightId, changes: values });
       setIsEditing(false);
     } catch (err) {
       setActionError(`Update failed: ${err.message}`);
@@ -55,8 +55,7 @@ function FlightDetails({ id }) {
     setPendingAction("status");
     setActionError("");
     try {
-      const updated = await updateFlight(flightId, { status: newStatus });
-      setFlight((prev) => (prev && prev.id === updated.id ? updated : prev));
+      await updateMutation.mutateAsync({ id: flightId, changes: { status: newStatus } });
     } catch (err) {
       setActionError(`Status update failed for flight #${flightId}: ${err.message}`);
     } finally {
@@ -70,7 +69,7 @@ function FlightDetails({ id }) {
     setPendingAction("delete");
     setActionError("");
     try {
-      await deleteFlight(flightId);
+      await deleteMutation.mutateAsync(flightId);
       navigate("/flights", { replace: true });
     } catch (err) {
       setActionError(`Remove failed: ${err.message}`);
@@ -198,9 +197,13 @@ function FlightDetails({ id }) {
           </>
         ) : (
           <p className="staff-hint">
-            🔒 Status changes and editing are for airport staff.{" "}
+            🔒 Status changes and editing need an account.{" "}
             <Link to="/login" state={{ from: location }}>
-              Log in as dispatcher
+              Log in
+            </Link>{" "}
+            or{" "}
+            <Link to="/signup" state={{ from: location }}>
+              sign up
             </Link>
           </p>
         )}

@@ -1,12 +1,15 @@
 import { Link, useSearchParams } from "react-router";
 import StateMessage from "../components/StateMessage.jsx";
-import { useLiveFlights } from "../hooks/useLiveFlights.js";
+import { useAllFlights } from "../hooks/useAllFlights.js";
 import { useNow } from "../hooks/useNow.js";
 import { formatDeparture, STATUS_REMARKS, TERMINALS } from "../utils/flights.js";
 
 const REFRESH_MS = 30000; 
 export default function BoardPage() {
-  const { flights, status, error, updatedAt, refreshFailed, refreshing, reload } = useLiveFlights(REFRESH_MS);
+  const { flights, status, error, updatedAt, refreshFailed, isFetching, reload } = useAllFlights({
+    refetchInterval: REFRESH_MS,
+  });
+  const refreshing = isFetching && status === "success";
   const now = useNow(1000);
   const [searchParams, setSearchParams] = useSearchParams();
   const terminal = searchParams.get("terminal") ?? "";

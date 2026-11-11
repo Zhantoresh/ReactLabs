@@ -11,9 +11,6 @@ const FILTER_KEYS = ["search", "status", "terminal"];
 
 export default function FlightsPage() {
   const { user } = useAuth();
-
-  // The URL is the single source of truth for filters:
-  // /flights?search=dubai&status=delayed&sort=departure&page=2
   const [searchParams, setSearchParams] = useSearchParams();
   const search = searchParams.get("search") ?? "";
   const status = searchParams.get("status") ?? "";
@@ -23,7 +20,6 @@ export default function FlightsPage() {
 
   const list = useFlightsList({ search, status, terminal, sort, page, limit: PAGE_SIZE });
 
-  // Change one URL parameter. Any filter change returns to page 1.
   function handleFilterChange(key, value) {
     setSearchParams(
       (prev) => {
@@ -33,7 +29,6 @@ export default function FlightsPage() {
         next.delete("page");
         return next;
       },
-      // typing in search should not create a history entry for every letter
       { replace: key === "search" },
     );
   }
@@ -69,11 +64,11 @@ export default function FlightsPage() {
         </div>
         <div className="page__actions">
           {/* /flights/new is protected: without login RequireAuth sends you to /login and back */}
-          <Link to="/flights/new" className="btn" title={user ? "" : "Staff only — you will be asked to log in"}>
+          <Link to="/flights/new" className="btn" title={user ? "" : "You will be asked to log in"}>
             {user ? "+ New flight" : "🔒 New flight"}
           </Link>
-          <button className="btn btn--ghost" onClick={list.reload} disabled={list.status === "loading"}>
-            Reload
+          <button className="btn btn--ghost" onClick={list.reload} disabled={list.isUpdating}>
+            {list.isUpdating ? "Updating…" : "Reload"}
           </button>
         </div>
       </div>
@@ -88,6 +83,20 @@ export default function FlightsPage() {
       />
 
       {list.status === "loading" && <StateMessage type="loading" title="Loading flights…" />}
+
+      {list.refreshFailed && (
+        <StateMessage
+          type="error"
+          title="Could not refresh the list — showing cached data"
+          action={
+            <button className="btn btn--small" onClick={list.reload}>
+              Try again
+            </button>
+          }
+        >
+          {list.error}
+        </StateMessage>
+      )}
 
       {list.status === "error" && (
         <StateMessage
@@ -135,6 +144,7 @@ export default function FlightsPage() {
         <>
           <p className="results-info">
             Showing {from}–{to} of {list.total} flights
+            {list.isUpdating && <span className="results-info__updating"> · updating…</span>}
           </p>
           <div className="card-grid">
             {list.data.map((flight) => (

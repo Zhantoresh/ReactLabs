@@ -154,6 +154,10 @@
   font-size: 14px;
 }
 
+.results-info__updating {
+  color: var(--color-primary);
+}
+
 /* Pagination */
 .pagination {
   display: flex;
