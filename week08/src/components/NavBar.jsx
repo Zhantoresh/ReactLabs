@@ -1,21 +1,30 @@
-import { Link, NavLink } from "react-router";
+import { Link, NavLink, useNavigate } from "react-router";
 import { useAuth } from "../hooks/useAuth.js";
 
 function linkClass({ isActive }) {
   return isActive ? "navbar__link navbar__link--active" : "navbar__link";
 }
 
+function buttonLinkClass({ isActive }) {
+  return `btn btn--small ${isActive ? "" : "btn--ghost"}`;
+}
+
 export default function NavBar() {
-  const { user, logout } = useAuth();
+  const { user, loading, logOut } = useAuth();
+  const navigate = useNavigate();
 
   const links = [
     { to: "/", label: "Home", end: true },
     { to: "/flights", label: "Flights" },
     { to: "/board", label: "Live board" },
-    // the lock shows that the page needs a staff login
     { to: "/dashboard", label: user ? "Dashboard" : "🔒 Dashboard" },
     { to: "/about", label: "About" },
   ];
+
+  async function handleLogout() {
+    await logOut();
+    navigate("/login", { replace: true });
+  }
 
   return (
     <header className="navbar">
@@ -30,19 +39,25 @@ export default function NavBar() {
           </NavLink>
         ))}
 
-        {user ? (
+        {/* while Firebase restores the session we do not know yet which buttons to show */}
+        {loading ? null : user ? (
           <span className="navbar__user">
-            <span className="navbar__user-name" title={user.email}>
-              👤 {user.name}
-            </span>
-            <button className="btn btn--ghost btn--small" onClick={logout}>
+            <NavLink to="/profile" className={linkClass} title={user.email}>
+              👤 Profile
+            </NavLink>
+            <button className="btn btn--ghost btn--small" onClick={handleLogout}>
               Log out
             </button>
           </span>
         ) : (
-          <NavLink to="/login" className={({ isActive }) => `btn btn--small ${isActive ? "" : "btn--ghost"}`}>
-            Log in
-          </NavLink>
+          <span className="navbar__user">
+            <NavLink to="/login" className={buttonLinkClass}>
+              Log in
+            </NavLink>
+            <NavLink to="/signup" className={buttonLinkClass}>
+              Sign up
+            </NavLink>
+          </span>
         )}
       </nav>
     </header>
