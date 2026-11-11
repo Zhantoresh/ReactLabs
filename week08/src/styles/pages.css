@@ -626,7 +626,43 @@ a.board__row:hover {
   border-color: var(--color-danger);
 }
 
+/* Login: forgot password */
+.login__label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.login__forgot {
+  font-size: 12px;
+}
+
 /* Profile */
+.verify-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding: 12px 14px;
+  border: 1px solid #f5d38a;
+  border-radius: 10px;
+  background: #fff8e6;
+  color: #7a5200;
+  font-size: 14px;
+}
+
+.verify-banner p {
+  margin: 0;
+  flex: 1 1 260px;
+}
+
+.verify-banner__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .profile {
   display: flex;
   justify-content: center;

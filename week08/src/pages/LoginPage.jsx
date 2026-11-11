@@ -64,7 +64,12 @@ export default function LoginPage() {
         </label>
 
         <label className="login__field">
-          Password
+          <span className="login__label-row">
+            Password
+            <Link to="/forgot-password" state={{ email }} className="login__forgot">
+              Forgot password?
+            </Link>
+          </span>
           <input
             type="password"
             value={password}

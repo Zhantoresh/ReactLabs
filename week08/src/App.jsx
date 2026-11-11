@@ -15,6 +15,7 @@ const LoginPage = lazy(() => import("./pages/LoginPage.jsx"));
 const SignupPage = lazy(() => import("./pages/SignupPage.jsx"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage.jsx"));
 const MyFlightsPage = lazy(() => import("./pages/MyFlightsPage.jsx"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage.jsx"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage.jsx"));
 
 export default function App() {
@@ -45,6 +46,7 @@ export default function App() {
         <Route element={<GuestOnly />}>
           <Route path="login" element={<LoginPage />} />
           <Route path="signup" element={<SignupPage />} />
+          <Route path="forgot-password" element={<ForgotPasswordPage />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />
