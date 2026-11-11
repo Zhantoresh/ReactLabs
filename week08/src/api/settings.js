@@ -1,7 +1,7 @@
-//key to store data in localstorage (own key, so week06 data does not mix with week07)
-export const DATA_KEY = "departures-board-week07";
+export const DATA_KEY = "departures-board-week08";
+export const FAVORITES_KEY = "departures-board-week08-favorites";
 
-//configs for fake API
+
 export const API_CONFIG = {
   minDelay: 500,
   maxDelay: 3000,
