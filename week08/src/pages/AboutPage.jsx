@@ -8,9 +8,11 @@ const ROUTES = [
   { path: "/flights/:id", page: "Flight details (+ previous / next departure)" },
   { path: "/board", page: "Live departures board (auto-refresh)" },
   { path: "/dashboard", page: "Dashboard (signed-in users)" },
-  { path: "/profile", page: "Profile: email, UID, logout (signed-in users)" },
+  { path: "/profile", page: "Profile: email, UID, email verification, logout (signed-in users)" },
+  { path: "/my-flights", page: "My flights: saved with ☆ (signed-in users)" },
   { path: "/login", page: "Log in: email/password or Google" },
   { path: "/signup", page: "Sign up: email, password, confirm password" },
+  { path: "/forgot-password", page: "Password reset email" },
   { path: "*", page: "Not Found (404)" },
 ];
 
@@ -36,7 +38,8 @@ export default function AboutPage() {
           “Async React: Effects &amp; API” homework (week06) and was extended with React Router: separate pages, nested
           routes, dynamic URLs, filters stored in the URL and lazy-loaded pages, and then with Firebase Authentication
           (email/password and Google) and server-data caching with TanStack Query. It also has protected routes and a
-          live departures board like the screens in the airport.
+          live departures board like the screens in the airport, optimistic status changes, saved flights per user,
+          prefetching on hover, password reset and email verification.
         </p>
       </div>
 
