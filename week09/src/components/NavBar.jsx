@@ -1,4 +1,5 @@
-import { Link, NavLink, useNavigate } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router";
 import { useAuth } from "../hooks/useAuth.js";
 import { useOnlineStatus } from "../hooks/useOnlineStatus.js";
 
@@ -14,23 +15,44 @@ export default function NavBar() {
   const { user, loading, logOut } = useAuth();
   const online = useOnlineStatus();
   const navigate = useNavigate();
+  const location = useLocation();
+
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPath, setMenuPath] = useState(location.pathname);
+
+
+  if (menuPath !== location.pathname) {
+    setMenuPath(location.pathname);
+    setMenuOpen(false);
+  }
+
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleKey(event) {
+      if (event.key === "Escape") setMenuOpen(false);
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [menuOpen]);
 
   const links = [
     { to: "/", label: "Home", end: true },
     { to: "/flights", label: "Flights" },
     { to: "/board", label: "Live board" },
-    // the lock shows that the page needs an account
     { to: "/dashboard", label: user ? "Dashboard" : "🔒 Dashboard" },
     { to: "/about", label: "About" },
   ];
 
   async function handleLogout() {
+    setMenuOpen(false);
     await logOut();
     navigate("/login", { replace: true });
   }
 
   return (
-    <header className="navbar">
+    <header className={`navbar ${menuOpen ? "navbar--open" : ""}`}>
       <div className="navbar__start">
         <Link to="/" className="navbar__brand">
           ✈ Departures Board
@@ -42,11 +64,25 @@ export default function NavBar() {
           title={online ? "Connected to the internet" : "No internet connection: showing saved data"}
         >
           <span className="net-status__dot" aria-hidden="true" />
-          {online ? "Online" : "Offline"}
+          <span className="net-status__text">{online ? "Online" : "Offline"}</span>
         </span>
       </div>
 
-      <nav className="navbar__links">
+      {/* visible only on narrow screens (see mobile.css) */}
+      <button
+        type="button"
+        className="navbar__toggle"
+        aria-expanded={menuOpen}
+        aria-controls="main-menu"
+        aria-label={menuOpen ? "Close menu" : "Open menu"}
+        onClick={() => setMenuOpen((open) => !open)}
+      >
+        <span className="navbar__toggle-icon" aria-hidden="true">
+          {menuOpen ? "✕" : "☰"}
+        </span>
+      </button>
+
+      <nav id="main-menu" className="navbar__links" aria-label="Main">
         {links.map((link) => (
           <NavLink key={link.to} to={link.to} end={link.end} className={linkClass}>
             {link.label}
