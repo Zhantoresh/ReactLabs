@@ -121,3 +121,25 @@
     padding-top: 16px;
   }
 }
+
+
+.update-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 10px max(16px, calc((100% - 1100px) / 2));
+  background: var(--color-primary-soft);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.update-banner__text {
+  font-weight: 600;
+}
+
+.update-banner__actions {
+  display: flex;
+  gap: 8px;
+}
