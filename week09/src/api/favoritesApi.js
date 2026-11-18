@@ -1,5 +1,5 @@
 import { API_CONFIG, FAVORITES_KEY } from "./settings.js";
-
+// Random delay and ~5% simulated errors, like a real server (settings in settings.js).
 function fakeRequest(operation) {
   const { minDelay, maxDelay, errorChance } = API_CONFIG;
   return new Promise((resolve, reject) => {
