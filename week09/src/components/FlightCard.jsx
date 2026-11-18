@@ -21,7 +21,7 @@ export default function FlightCard({ flight }) {
       >
         <div className="card__top">
           <span className="card__time">{time}</span>
-          <StatusBadge status={flight.status} />
+          <StatusBadge status={flight.status} pending={flight.pendingStatus} />
         </div>
         <h3 className="card__title">{flight.name}</h3>
         <p className="card__route">{flight.description}</p>

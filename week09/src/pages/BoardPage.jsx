@@ -98,6 +98,7 @@ export default function BoardPage() {
                 <span className="board__col--gate">{flight.gate}</span>
                 <span className={`board__remark board__remark--${flight.status}`}>
                   {STATUS_REMARKS[flight.status] ?? flight.status}
+                  {flight.pendingStatus && " ⏳"}
                 </span>
               </Link>
             ))}

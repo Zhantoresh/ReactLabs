@@ -319,3 +319,10 @@
   color: #6b5200;
   line-height: 1.45;
 }
+
+
+
+.badge--pending {
+  outline: 2px dashed #e0b84c;
+  outline-offset: 1px;
+}

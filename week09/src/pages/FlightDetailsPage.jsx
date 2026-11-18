@@ -30,6 +30,7 @@ function FlightDetails({ id }) {
   const [isEditing, setIsEditing] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // null | "edit" | "status" | "delete"
   const [actionError, setActionError] = useState("");
+  const [actionInfo, setActionInfo] = useState("");
   const isBusy = pendingAction !== null;
   const notice = location.state?.notice ?? "";
 
@@ -60,8 +61,12 @@ function FlightDetails({ id }) {
     const oldStatus = flight.status;
     setPendingAction("status");
     setActionError("");
+    setActionInfo("");
     try {
-      await statusMutation.mutateAsync({ id: flightId, status: newStatus });
+      const { queued } = await statusMutation.mutateAsync({ id: flightId, status: newStatus });
+      if (queued) {
+        setActionInfo("No connection: the change is saved on this device and will be sent automatically.");
+      }
     } catch (err) {
       setActionError(`Could not change status to "${newStatus}" (${err.message}). It was set back to "${oldStatus}".`);
     } finally {
@@ -157,6 +162,7 @@ function FlightDetails({ id }) {
     <CachedDataNotice cachedAt={cachedAt} />
       {notice && <StateMessage type="info" title={notice} />}
       {actionError && <StateMessage type="error" title={actionError} />}
+      {actionInfo && <StateMessage type="info" title={actionInfo} />}
 
       <div className="details-card">
         <div className="details-card__header">
@@ -165,8 +171,8 @@ function FlightDetails({ id }) {
             <h1 className="details-card__title">{flight.name}</h1>
             <p className="details-card__route">{flight.description}</p>
           </div>
-                    <div className="details-card__badges">
-            <StatusBadge status={flight.status} />
+            <div className="details-card__badges">
+            <StatusBadge status={flight.status} pending={flight.pendingStatus} />
             {pendingAction === "status" && <span className="saving-hint">saving…</span>}
           </div>
         </div>
