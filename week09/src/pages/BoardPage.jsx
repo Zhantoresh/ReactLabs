@@ -82,7 +82,9 @@ export default function BoardPage() {
               <span role="columnheader" className="board__col--terminal">
                 Terminal
               </span>
-              <span role="columnheader">Gate</span>
+              <span role="columnheader" className="board__col--gate">
+                Gate
+              </span>
               <span role="columnheader">Remarks</span>
             </div>
 
@@ -93,7 +95,7 @@ export default function BoardPage() {
                 <span className="board__destination">{flight.destination}</span>
                 <span className="board__col--airline">{flight.airline}</span>
                 <span className="board__col--terminal">{flight.terminal}</span>
-                <span>{flight.gate}</span>
+                <span className="board__col--gate">{flight.gate}</span>
                 <span className={`board__remark board__remark--${flight.status}`}>
                   {STATUS_REMARKS[flight.status] ?? flight.status}
                 </span>
