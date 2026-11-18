@@ -1,144 +1,191 @@
-# Task 6 — Server Data, Caching & Firebase Authentication (Departures Board)
+# Task 7 — Progressive Web App (Departures Board)
 
-The week07 departures board (React Router, nested routes, filters in the URL, lazy pages, live board)
-extended with **Firebase Authentication** (email/password + Google), **environment variables** and
-**server-data caching with TanStack Query**. All routes, filters, pagination and features from week07 are kept.
+The departures board from the previous homeworks (React Router, Firebase Authentication, TanStack Query)
+turned into an **installable Progressive Web App**: Web App Manifest, a hand-written Service Worker with
+versioned caches and updates, two runtime caching strategies, an offline page, an online/offline indicator
+and a mobile interface from 320px. All features of week07 and week08 are kept.
 
-- Deployed: https://zhantoresh.github.io/ReactLabs/week08/
-- Repo: https://github.com/Zhantoresh/ReactLabs (folder `week08`)
+- Deployed: https://zhantoresh.github.io/ReactLabs/week09/
+- Repo: https://github.com/Zhantoresh/ReactLabs (folder `week09`)
 
 ## Run locally
 
-    cd week08
+    cd week09
     npm install
-    cp .env.example .env.local   # then put your Firebase web-app config into .env.local
-    npm run dev
+    cp .env.example .env.local   # put your Firebase web-app config into .env.local
+    npm run dev                  # development (no Service Worker)
 
-`.env.local` is in `.gitignore` and is never committed. `.env.example` shows which variables are needed.
-Vite exposes only variables that start with `VITE_` (read through `import.meta.env`).
+    npm run build && npm run preview   # production build: Service Worker, offline, install
+
+The Service Worker is registered only in the production build (`npm run preview` or the deployed site).
+`.env.local` is in `.gitignore`; `.env.example` lists the variables.
 
 ## Firebase setup
 
-1. Firebase console → create a project → add a **Web app** → copy its config into `.env.local`.
-2. Authentication → Sign-in method → enable **Email/Password** and **Google**.
-3. Authentication → Settings → Authorized domains → add `zhantoresh.github.io` (for the deployed version).
+1. Firebase console → Web app → copy its config into `.env.local`.
+2. Authentication → enable **Email/Password** and **Google**; add `zhantoresh.github.io` to Authorized domains.
+3. Firestore Database → create the `(default)` database and publish these rules:
 
-Firebase is initialized once in `src/firebase.js`. All auth calls are in `src/services/auth.js`.
+       match /flights/{flightId} {
+         allow read: if true;                                  // public data
+         allow create, update, delete: if request.auth != null; // signed-in users only
+       }
 
-## Routes
+4. Upload the 40 seed flights once (needs an email/password account of the project):
 
-| Path | Page | Access |
-| --- | --- | --- |
-| `/` | Home | public |
-| `/about` | About the project | public |
-| `/flights` | Flights list (search, 2 filters, sorting, pagination in the URL) | public |
-| `/flights/new` | New flight | signed in |
-| `/flights/:id` | Flight details (+ previous / next departure) | public, editing when signed in |
-| `/board` | Live departures board (auto-refresh) | public |
-| `/dashboard` | Dashboard with statistics | signed in |
-| `/profile` | Email, UID, account info, email verification, logout | signed in |
-| `/my-flights` | Flights the user saved with ☆ | signed in |
-| `/login` | Email/password login, Google sign-in | guests only |
-| `/signup` | Email, password, confirm password with validation, Google | guests only |
-| `/forgot-password` | Send a password reset email | guests only |
-| `*` | Not Found (404) | public |
+       SEED_EMAIL=you@example.com SEED_PASSWORD='secret' npm run seed
 
-`HashRouter` is used (`…/week08/#/flights/3`), so direct URLs and refresh work on GitHub Pages.
+## Why the flights moved to Firestore
 
-## Authentication
+The fake API from the earlier homeworks kept data in `localStorage` and made no network requests,
+so a Service Worker had nothing to cache. The flights now live in Firestore and are read through its
+**REST API with `fetch()`** (`src/services/service.js`):
 
-- `AuthProvider` (`src/context/AuthProvider.jsx`) subscribes to Firebase with `onAuthStateChanged`
-  and keeps `user` and `loading` in state; `useAuth()` gives them (plus `signUp`, `logIn`,
-  `logInWithGoogle`, `logOut`, `resetPassword`, `sendVerificationEmail`, `refreshUser`) to any component.
-- **Persistent sessions:** Firebase saves the session (`browserLocalPersistence`), and after a refresh
-  `onAuthStateChanged` restores the user. While that happens `loading` is `true`.
-- **Protected routes:** `RequireAuth` (layout route) waits while `loading`, then either renders the page
-  or redirects to `/login` with `state={{ from: location }}`; after login the user returns to that page.
-  `GuestOnly` sends a signed-in user away from `/login`, `/signup` and `/forgot-password`.
-- **NavBar:** shows *Log in / Sign up* for guests and *My flights / Profile / Log out* for signed-in users.
-- **Errors:** Firebase error codes are turned into readable messages (`authErrorMessage` in `services/auth.js`).
+- reads (list, details) are public **GET requests without a token** → the Service Worker caches them;
+- writes (create, edit, status, delete) send the user's ID token (`Authorization: Bearer …`) and are never cached;
+- search, filters, sorting and pagination work exactly as before (done in the service).
 
-## Caching strategy (TanStack Query)
+## 1. Manifest & installation
 
-Cache settings and query keys are in `src/services/queryClient.js`; hooks in `src/hooks/` use them.
+`public/manifest.json`, linked in `index.html` (`<link rel="manifest">`, `theme-color`, `apple-touch-icon`):
 
-| Query key | Data | Used by |
-| --- | --- | --- |
-| `["flights", "list", { search, status, terminal, sort, page, limit }]` | one page of the list | Flights page |
-| `["flights", "detail", id]` | one flight | Flight details |
-| `["flights", "all"]` | all flights sorted by time | Dashboard, Live board, previous/next links, My flights |
-| `["favorites", uid]` | saved flight ids of one user | star buttons, My flights |
-
-**Expiration / revalidation**
-
-- `staleTime: 60 s` — cached data is shown instantly and not refetched for 60 seconds
-  (e.g. going back to a list page or a flight you just opened).
-- After 60 s the data is *stale*: it is still shown at once, and a background request refreshes it
-  when the query is used again or the window regains focus.
-- `gcTime: 5 min` — cache entries that no page uses are removed from memory after 5 minutes.
-- The live board refetches `["flights", "all"]` every 30 s (`refetchInterval`) while it is open.
-- `retry: 1` — a failed request (the fake API fails ~5% of the time) is retried once before showing an error.
-
-**When the cache is invalidated**
-
-| Operation | What happens to the cache |
+| Field | Value |
 | --- | --- |
-| Create a flight | the new flight is put into `["flights", "detail", id]`; all lists and `["flights", "all"]` are invalidated |
-| Edit a flight | the returned flight replaces `["flights", "detail", id]`; all lists and `["flights", "all"]` are invalidated |
-| Change status | optimistic update of `["flights", "detail", id]` (rolled back on error); then all lists and `["flights", "all"]` are invalidated |
-| Delete a flight | its detail entry is marked stale (next visit shows "not found"); all lists and `["flights", "all"]` are invalidated |
-| Star / unstar | optimistic update of `["favorites", uid]` (rolled back on error), then it is invalidated |
-| Log out | `["favorites", …]` entries are removed from the cache |
+| `name` / `short_name` | Departures Board — Almaty International / Departures |
+| `start_url` / `scope` | `./` → `/ReactLabs/week09/` (relative to the manifest) |
+| `display` | `standalone` |
+| `theme_color` / `background_color` | `#5b4fe0` / `#f7f6fc` |
+| `icons` | 192×192, 512×512 and a 512×512 maskable icon (`public/icons/`) |
 
-Invalidated queries that are on screen refetch immediately; the others refetch the next time they are opened.
-The mutations are in `src/hooks/useFlightMutations.js` and `src/hooks/useFavorites.js`.
+The deployed app is installable in Chrome / Edge / Android; on iPhone via Share → Add to Home Screen.
 
-**Outdated requests** — each filter combination has its own query key, so a late response for old filters
-is stored under the old key and never replaces the list for the current filters. `placeholderData:
-keepPreviousData` keeps the previous page on screen while the next one loads. Optimistic updates call
-`cancelQueries` first, so a refetch that is already running cannot overwrite the new value.
+## 2. Service Worker lifecycle
 
-**States** — every page handles loading, error (with *Try again*), empty results and "not found";
-if a background refresh fails, the cached data stays on screen with a warning.
+`public/sw.js` — plain JavaScript, no libraries. A small Vite plugin in `vite.config.js` runs after
+`vite build` and writes into `dist/sw.js` the list of all built files and a **VERSION** (hash of those files).
+
+| Event | What happens |
+| --- | --- |
+| `install` | pre-caches the app shell into `departures-week09-shell-<VERSION>`: `index.html`, every built JS/CSS file, icons, manifest, `offline.html` |
+| `activate` | deletes every `departures-week09-*` cache that is not current (old versions), then `clients.claim()` |
+| `fetch` | chooses a strategy by request type (see below) |
+| `message` | `SKIP_WAITING` from the page activates a waiting new version |
+
+**Updates** (`src/services/serviceWorker.js`, `UpdateBanner`): a new deploy changes `sw.js`, the browser installs
+the new version and it **waits**. The page notices it (`updatefound` / `registration.waiting`) and shows
+"A new version is available — **Update now**". The button sends `SKIP_WAITING`; on `controllerchange` the page
+reloads once with the new version, and `activate` removes the old cache. Nobody has to clear browser storage.
+The browser checks for updates on every navigation; the app also calls `registration.update()` every 30 minutes
+and when the tab becomes visible.
+
+## 3. Runtime caching
+
+| Requests | Strategy | Cache | Limit |
+| --- | --- | --- | --- |
+| app shell (pre-cached files) | cache first | `shell-<VERSION>` | replaced by every deploy |
+| images and fonts | **cache first** | `departures-week09-static-v1` | 60 entries |
+| Firestore flights (GET, no token) | **network first**, 5 s timeout, cache as fallback | `departures-week09-api-v1` | 50 entries, 7 days |
+| Firebase Auth, Google sign-in, profile photos, requests with `Authorization`, POST/PATCH/DELETE | network only | — | never cached |
+
+- **Offline access:** previously fetched lists and flights are answered from `api-v1` when the network fails.
+- **"You are viewing cached data":** responses from the cache get `X-SW-From-Cache` and `X-SW-Cached-At` headers;
+  the service returns `cachedAt` with the data and the pages show "📦 Saved copy… saved on 19 Nov, 01:56".
+- **Cache size:** `trimCache()` keeps only the newest entries; API entries older than 7 days are not used.
+- **Private data:** nothing with a token or from Firebase Auth goes to the shared caches; saved flights
+  ("My flights") stay in `localStorage` per user.
+- **Failed requests:** without a connection and without a saved copy the service throws `OfflineError`;
+  pages show the offline message instead of crashing. Changes without a connection fail with a clear message
+  (or go to the offline queue, see Extra features).
+- **TanStack Query** (`src/services/queryClient.js`): `networkMode: "offlineFirst"` (requests still run offline,
+  so the Service Worker can answer them), a saved copy is stale at once (`staleTime` function),
+  `refetchOnReconnect` reloads fresh data when the connection returns.
+
+## 4. Offline page and connectivity
+
+- **`/offline`** (`pages/OfflinePage.jsx`) — styled message, **Retry connection**, link to saved flights;
+  not lazy-loaded and pre-cached, so it opens with no connection at all.
+- **Retry connection** makes a real request (`services/connection.js`), because `navigator.onLine` only says
+  that Wi-Fi is on, not that the internet works. On success it returns to the previous page.
+- **Pages whose data was never loaded** show the same offline message (`OfflineMessage`) instead of an error.
+- **Navigation the Service Worker cannot complete** (a page outside the cached app) → `public/offline.html`.
+- **Indicator:** "● Online / ● Offline" next to the logo and a bar under the menu while offline.
+- **Back online:** queries refetch automatically and the "saved copy" notices disappear.
+
+## 5. Mobile
+
+`src/styles/mobile.css` (loaded last):
+
+- **☰ menu** up to 1080px (`NavBar`): `aria-expanded`, closes after navigation and on Escape, scrolls on low screens;
+- screens from **320px**, no horizontal scrolling (checked on every page at 320, 375, 640×360 and 768);
+- **touch-friendly**: buttons, inputs, menu items and the ☆ button at least 44px; inputs 16px (no zoom on iPhone);
+- cards, forms, filters, dashboard and details are one column; the live board hides airline/terminal/gate columns
+  on narrow screens so destinations stay readable;
+- **landscape phones**: the bar is not sticky and the menu scrolls.
 
 ## Extra features (bonus)
 
-- **Optimistic status changes with rollback** (`useChangeFlightStatus` in `hooks/useFlightMutations.js`).
-  The new status is written into the cache in `onMutate` and shown immediately; a snapshot of the old value
-  is kept and restored in `onError` if the API fails (the fake API fails ~5% of requests, so a rollback can be
-  seen live). `onSettled` invalidates the lists so the board and dashboard catch up.
-- **My flights** (`/my-flights`, `hooks/useFavorites.js`). Signed-in users star flights; every user has their
-  own list stored by Firebase `uid` (`api/favoritesApi.js`). The cache key contains the uid
-  (`["favorites", uid]`), the query is disabled for guests, the star toggles optimistically with rollback,
-  and on logout the cached personal data is removed (`removeQueries` in `AuthProvider`).
-- **Prefetch on hover** (`hooks/usePrefetchFlight.js`). Hovering or focusing a flight card calls
-  `prefetchQuery` for `["flights", "detail", id]`, so the details page usually opens without "Loading…".
-  Fresh cached data (staleTime) is not requested again.
-- **Password reset and email verification** (Firebase `sendPasswordResetEmail`, `sendEmailVerification`).
-  "Forgot password?" on the login page opens `/forgot-password`; the profile shows a banner for unverified
-  emails with "Send verification email" and "I have verified" (reloads the user from Firebase).
+### Offline queue for status changes
 
-## Structure
+Without a connection a status change is **not lost**:
 
+1. `useChangeFlightStatus` gets `OfflineError` and saves the change in **IndexedDB** (`api/outboxDb.js`,
+   key `[uid, flightId]`, so a newer change of the same flight replaces the older one).
+2. The new status is shown at once with ⏳ — on the details page, in the list and on the live board, even after
+   a reload (`withQueuedStatuses` in `service.js` puts queued statuses over the data).
+3. A bar shows "⏳ 2 changes waiting to be sent" with **Discard** for each change.
+4. When the connection returns (`online` event), after login or on **Send now**, `flushOutbox` sends the changes
+   with a fresh ID token, removes them from the queue and reloads the flights. Result: "✓ 2 offline changes sent".
+5. Conflicts: a flight deleted while offline is dropped with a message; other errors stay in the queue with the
+   error text.
+
+Sending is done by the page, not by Background Sync in the Service Worker: Firestore needs the user's
+Firebase ID token (refreshed in the page), and the `online` event works in every browser, including Safari.
+
+### Install button
+
+`services/install.js` keeps the `beforeinstallprompt` event and shows **⬇ Install** in the menu;
+it opens the browser install dialog. On iPhone it shows "Share → Add to Home Screen" instructions.
+The button is hidden when the app is installed (`appinstalled`, `display-mode: standalone`).
+
+## Previous homeworks (kept)
+
+- **Routing (week07):** nested and protected routes, `/flights/:id`, filters and pagination in the URL,
+  lazy pages, live board with auto-refresh, previous/next departure, 404.
+- **Auth and caching (week08):** Firebase email/password + Google, `AuthProvider` with `onAuthStateChanged`,
+  `RequireAuth` / `GuestOnly`, profile, password reset, email verification; TanStack Query with query keys
+  `["flights","list",params]`, `["flights","detail",id]`, `["flights","all"]`, `["favorites",uid]`,
+  invalidation after create / edit / status / delete, optimistic status, saved flights, prefetch on hover.
+
+## Structure (new in week09)
+
+    public/
+      manifest.json, icons/        Web App Manifest and icons
+      sw.js                        Service Worker
+      offline.html                 offline fallback of the Service Worker
+    scripts/seed-firestore.mjs     uploads the seed flights to Firestore
+    vite.config.js                 plugin: pre-cache list + VERSION for sw.js
     src/
-      firebase.js          Firebase app + auth (config from import.meta.env)
-      App.jsx              routes only (nested, protected, guest-only, React.lazy)
-      main.jsx             QueryClientProvider + HashRouter + AuthProvider
-      layouts/RootLayout   NavBar + <Suspense><Outlet/></Suspense> + footer
-      pages/               Home, About, Flights, NewFlight, FlightDetails, Board, Dashboard,
-                           Login, Signup, ForgotPassword, Profile, MyFlights, NotFound
-      components/          NavBar, RequireAuth, GuestOnly, GoogleButton, FavoriteButton, FlightCard, FlightFilters,
-                           FlightForm, Pagination, StatusBadge, StateMessage, PageLoader
-      context/             AuthContext + AuthProvider
-      hooks/               useAuth, useFlightsList, useFlight, useAllFlights (+ useAdjacentFlights),
-                           useFlightMutations, useFavorites, usePrefetchFlight, useNow
-      services/            service.js (flight API), auth.js (Firebase auth), favorites.js,
-                           queryClient.js (cache + keys)
-      api/                 fake API, favoritesApi (saved flights per uid), settings, seed data (40 flights)
-      utils/flights.js     constants and formatting helpers
-      styles/              global, layout, components, pages
+      api/firestoreFormat.js       Firestore REST <-> flight objects
+      api/outboxDb.js              IndexedDB for the offline queue
+      services/service.js          flights API on Firestore REST (+ cachedAt, OfflineError)
+      services/serviceWorker.js    registration and update detection
+      services/connection.js       real connection check
+      services/outbox.js           offline queue: queue / send / discard
+      services/install.js          beforeinstallprompt / appinstalled
+      hooks/                       useAppUpdate, useOnlineStatus, useOutbox, useInstallApp (+ previous hooks)
+      components/                  UpdateBanner, OfflineBar, OfflineMessage, CachedDataNotice, OutboxBar,
+                                   InstallButton (+ previous components)
+      pages/OfflinePage.jsx        /offline
+      styles/mobile.css            mobile version
 
-The fake API uses its own localStorage keys (`departures-board-week08`, `departures-board-week08-favorites`),
-so data from week07 does not mix in.
+UI components never call `fetch`, Firebase, IndexedDB or `localStorage` directly — only through hooks and services.
 
-UI components never call the API, Firebase or `localStorage` directly — only through hooks and services.
+## How to check (Chrome DevTools)
+
+- **Application → Manifest:** fields, icons, no installability errors.
+- **Application → Service workers:** `sw.js` activated; tick **Offline** to test offline mode.
+- **Application → Cache storage:** `shell-<VERSION>`, `static-v1`, `api-v1`.
+- **Application → IndexedDB → departures-week09 → outbox:** queued offline changes.
+- **Network:** Firestore GET requests show `(ServiceWorker)`; offline they return `200 (from service worker)`
+  with `X-SW-From-Cache: 1`.
+- **Device toolbar (Cmd + Shift + M):** 320px, iPhone, landscape.
