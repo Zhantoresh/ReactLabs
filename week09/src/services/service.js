@@ -1,20 +1,21 @@
-// All flight API requests of the app live here.
-// The "server" is the Firestore collection "flights", used through its REST API with fetch():
-//   - reads (list, details) are public GET requests without a token,
-//     so the Service Worker can cache them for offline use;
-//   - writes (create, edit, status, delete) send the signed-in user's ID token,
-//     and Firestore rules reject them for guests.
-// Hooks call these functions; pages and components never call fetch or Firestore directly.
 import { auth } from "../firebase.js";
 import { documentToFlight, toFirestoreFields } from "../api/firestoreFormat.js";
+
 
 export const PAGE_SIZE = 8;
 
 const PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID;
 const API_KEY = import.meta.env.VITE_FIREBASE_API_KEY;
 
-
+// https://firestore.googleapis.com/v1/projects/<project>/databases/(default)/documents/flights
 export const FLIGHTS_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/flights`;
+
+export class OfflineError extends Error {
+  constructor(message = "You are offline and this data has not been saved on this device yet.") {
+    super(message);
+    this.name = "OfflineError";
+  }
+}
 
 
 export class NotFoundError extends Error {
@@ -34,6 +35,7 @@ function buildUrl(path = "", params = {}) {
   return url.toString();
 }
 
+
 async function request(url, { method = "GET", body, withToken = false } = {}) {
   const headers = {};
   if (body) headers["Content-Type"] = "application/json";
@@ -48,7 +50,10 @@ async function request(url, { method = "GET", body, withToken = false } = {}) {
   try {
     response = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
   } catch {
-    throw new Error("No connection to the server. Check your internet and try again.");
+    // fetch itself fails only when there is no connection (and, for reads, no cached copy)
+    throw method === "GET"
+      ? new OfflineError()
+      : new OfflineError("No internet connection. Changes can be saved only online.");
   }
 
   const data = await response.json().catch(() => ({}));
@@ -58,7 +63,10 @@ async function request(url, { method = "GET", body, withToken = false } = {}) {
     if (response.status === 403) throw new Error("You are not allowed to do this. Log in and try again.");
     throw new Error(data.error?.message || `Server error (${response.status})`);
   }
-  return data;
+
+  const fromCache = response.headers.get("X-SW-From-Cache") === "1";
+  const cachedAt = fromCache ? Number(response.headers.get("X-SW-Cached-At")) || null : null;
+  return { body: data, cachedAt };
 }
 
 // ---------- reading ----------
@@ -66,15 +74,18 @@ async function request(url, { method = "GET", body, withToken = false } = {}) {
 
 async function fetchAllDocuments() {
   const flights = [];
+  let cachedAt = null;
   let pageToken = "";
   do {
-    const data = await request(buildUrl("", { pageSize: 300, ...(pageToken && { pageToken }) }));
-    flights.push(...(data.documents ?? []).map(documentToFlight));
-    pageToken = data.nextPageToken ?? "";
+    const { body, cachedAt: pageCachedAt } = await request(
+      buildUrl("", { pageSize: 300, ...(pageToken && { pageToken }) }),
+    );
+    flights.push(...(body.documents ?? []).map(documentToFlight));
+    cachedAt = cachedAt ?? pageCachedAt;
+    pageToken = body.nextPageToken ?? "";
   } while (pageToken);
-  return flights;
+  return { flights, cachedAt };
 }
-
 
 function applyListParams(flights, params) {
   const { search, status, terminal, airline, sort = "name" } = params;
@@ -123,22 +134,25 @@ function applyListParams(flights, params) {
 
 
 export async function getFlights(params) {
-  const flights = await fetchAllDocuments();
-  return applyListParams(flights, params);
+  const { flights, cachedAt } = await fetchAllDocuments();
+  return { ...applyListParams(flights, params), cachedAt };
 }
 
 
 export async function getAllFlights() {
-  const flights = await fetchAllDocuments();
-  return applyListParams(flights, { sort: "departure", limit: flights.length || 1 }).data;
+  const { flights, cachedAt } = await fetchAllDocuments();
+  const sorted = applyListParams(flights, { sort: "departure", limit: flights.length || 1 }).data;
+  return { flights: sorted, cachedAt };
 }
+
 
 export async function getFlight(id) {
   if (!/^\d+$/.test(String(id))) {
     throw new NotFoundError(`"${id}" is not a valid flight id`);
   }
   try {
-    return documentToFlight(await request(buildUrl(`/${id}`)));
+    const { body, cachedAt } = await request(buildUrl(`/${id}`));
+    return { flight: documentToFlight(body), cachedAt };
   } catch (err) {
     if (err instanceof NotFoundError) throw new NotFoundError(`Flight #${id} was not found`);
     throw err;
@@ -154,11 +168,12 @@ function withoutId(values) {
   return rest;
 }
 
+
 export async function createFlight(values) {
-  const flights = await fetchAllDocuments();
+  const { flights } = await fetchAllDocuments();
   const nextId = flights.reduce((max, flight) => Math.max(max, flight.id), 0) + 1;
 
-  const document = await request(buildUrl(`/${nextId}`, { "currentDocument.exists": "false" }), {
+  const { body: document } = await request(buildUrl(`/${nextId}`, { "currentDocument.exists": "false" }), {
     method: "PATCH",
     body: { fields: toFirestoreFields(withoutId(values)) },
     withToken: true,
@@ -166,9 +181,10 @@ export async function createFlight(values) {
   return { flight: documentToFlight(document), warning: "" };
 }
 
+
 export async function updateFlight(id, changes) {
   const fields = withoutId(changes);
-  const document = await request(
+  const { body: document } = await request(
     buildUrl(`/${id}`, { "updateMask.fieldPaths": Object.keys(fields), "currentDocument.exists": "true" }),
     { method: "PATCH", body: { fields: toFirestoreFields(fields) }, withToken: true },
   );
