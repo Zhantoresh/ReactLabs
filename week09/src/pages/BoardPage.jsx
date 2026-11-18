@@ -4,10 +4,11 @@ import { useAllFlights } from "../hooks/useAllFlights.js";
 import { useNow } from "../hooks/useNow.js";
 import { formatDeparture, STATUS_REMARKS, TERMINALS } from "../utils/flights.js";
 import CachedDataNotice from "../components/CachedDataNotice.jsx";
+import OfflineMessage from "../components/OfflineMessage.jsx";
 
 const REFRESH_MS = 30000; 
 export default function BoardPage() {
-  const { flights, status, error, updatedAt, refreshFailed, isFetching, cachedAt, reload } = useAllFlights({
+  const { flights, status, error, offline, updatedAt, refreshFailed, isFetching, cachedAt, reload } = useAllFlights({
     refetchInterval: REFRESH_MS,
   });
   const refreshing = isFetching && status === "success";
@@ -19,6 +20,13 @@ export default function BoardPage() {
   const secondsAgo = updatedAt ? Math.max(0, Math.floor((now - updatedAt) / 1000)) : null;
   const clock = new Date(now).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
+  if (offline) {
+  return (
+    <section className="page board-page">
+      <OfflineMessage onBackOnline={reload} />
+    </section>
+  );
+}
   return (
     <section className="page board-page">
           <CachedDataNotice cachedAt={cachedAt} />

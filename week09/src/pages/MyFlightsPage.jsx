@@ -4,6 +4,7 @@ import StateMessage from "../components/StateMessage.jsx";
 import { useAllFlights } from "../hooks/useAllFlights.js";
 import { useFavorites } from "../hooks/useFavorites.js";
 import CachedDataNotice from "../components/CachedDataNotice.jsx";
+import OfflineMessage from "../components/OfflineMessage.jsx";
 
 export default function MyFlightsPage() {
   const favorites = useFavorites(); 
@@ -26,7 +27,9 @@ export default function MyFlightsPage() {
       <CachedDataNotice cachedAt={all.cachedAt} />
       {loading && <StateMessage type="loading" title="Loading your flights…" />}
 
-      {!loading && error && (
+      {!loading && all.offline && <OfflineMessage onBackOnline={all.reload} />}
+
+      {!loading && error && !all.offline && (
         <StateMessage
           type="error"
           title="Failed to load your flights"

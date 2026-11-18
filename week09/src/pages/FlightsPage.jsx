@@ -7,6 +7,7 @@ import { useAuth } from "../hooks/useAuth.js";
 import { useFlightsList } from "../hooks/useFlightsList.js";
 import { PAGE_SIZE } from "../services/service.js";
 import CachedDataNotice from "../components/CachedDataNotice.jsx";
+import OfflineMessage from "../components/OfflineMessage.jsx";
 
 const FILTER_KEYS = ["search", "status", "terminal"];
 
@@ -99,7 +100,9 @@ export default function FlightsPage() {
         </StateMessage>
       )}
 
-      {list.status === "error" && (
+      {list.offline && <OfflineMessage onBackOnline={list.reload} />}
+
+      {list.status === "error" && !list.offline && (
         <StateMessage
           type="error"
           title="Failed to load flights"

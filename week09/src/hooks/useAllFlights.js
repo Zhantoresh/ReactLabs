@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getAllFlights } from "../services/service.js";
+import { getAllFlights, OfflineError } from "../services/service.js";
 import { flightKeys } from "../services/queryClient.js";
 
 
@@ -13,6 +13,7 @@ export function useAllFlights(options = {}) {
   return {
     flights: query.data?.flights ?? [],
     status: query.isPending ? "loading" : query.isError && !query.data ? "error" : "success",
+    offline: query.error instanceof OfflineError && !query.data, // offline and nothing saved
     error: query.error?.message ?? "",
     updatedAt: query.dataUpdatedAt || null, 
     isFetching: query.isFetching,

@@ -4,6 +4,7 @@ import StateMessage from "../components/StateMessage.jsx";
 import { useAllFlights } from "../hooks/useAllFlights.js";
 import { STATUSES, TERMINALS } from "../utils/flights.js";
 import CachedDataNotice from "../components/CachedDataNotice.jsx";
+import OfflineMessage from "../components/OfflineMessage.jsx";
 
 function countBy(items, field) {
   const counts = {};
@@ -21,9 +22,8 @@ function percent(part, total) {
 }
 
 export default function DashboardPage() {
-  const { flights, status, error, cachedAt, reload } = useAllFlights();
+const { flights, status, error, offline, cachedAt, reload } = useAllFlights();
 
-  // Interactive filter: terminal. Kept in the URL (?terminal=T2) so it survives refresh.
   const [searchParams, setSearchParams] = useSearchParams();
   const terminal = searchParams.get("terminal") ?? "";
 
@@ -39,7 +39,15 @@ export default function DashboardPage() {
       </section>
     );
   }
-
+ 
+  if (offline) {
+  return (
+    <section className="page">
+      <h1>Dashboard</h1>
+      <OfflineMessage onBackOnline={reload} />
+    </section>
+  );
+}
   if (status === "error") {
     return (
       <section className="page">

@@ -10,6 +10,7 @@ import { useFlight } from "../hooks/useFlight.js";
 import { useChangeFlightStatus, useDeleteFlight, useUpdateFlight } from "../hooks/useFlightMutations.js";
 import { formatDeparture, show, STATUS_ACTIONS } from "../utils/flights.js";
 import CachedDataNotice from "../components/CachedDataNotice.jsx";
+import OfflineMessage from "../components/OfflineMessage.jsx";
 
 export default function FlightDetailsPage() {
   const { id } = useParams();
@@ -121,6 +122,14 @@ function FlightDetails({ id }) {
     );
   }
 
+  if (status === "offline") {
+    return (
+      <section className="page">
+        {links}
+        <OfflineMessage onBackOnline={reload} />
+      </section>
+    );
+  }
   if (status === "error") {
     return (
       <section className="page">
