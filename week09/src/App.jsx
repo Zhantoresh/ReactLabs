@@ -5,6 +5,7 @@ import RequireAuth from "./components/RequireAuth.jsx";
 import GuestOnly from "./components/GuestOnly.jsx";
 import HomePage from "./pages/HomePage.jsx";
 import FlightsPage from "./pages/FlightsPage.jsx";
+import OfflinePage from "./pages/OfflinePage.jsx";
 
 const AboutPage = lazy(() => import("./pages/AboutPage.jsx"));
 const FlightDetailsPage = lazy(() => import("./pages/FlightDetailsPage.jsx"));
@@ -25,6 +26,8 @@ export default function App() {
         <Route index element={<HomePage />} />
         <Route path="about" element={<AboutPage />} />
         <Route path="board" element={<BoardPage />} />
+          {/* not lazy: it must open even if a chunk could not be loaded */}
+        <Route path="offline" element={<OfflinePage />} />
 
         <Route path="flights">
           <Route index element={<FlightsPage />} />
