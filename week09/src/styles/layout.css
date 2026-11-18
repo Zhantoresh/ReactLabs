@@ -34,7 +34,7 @@
 }
 
 .navbar__link {
-  padding: 6px 10px;
+  padding: 6px 8px;
   border-radius: 8px;
   color: var(--color-muted);
   text-decoration: none;
@@ -248,4 +248,45 @@
   font: inherit;
   font-size: 12px;
   cursor: pointer;
+}
+
+
+
+.install-button__more {
+  display: none; 
+}
+
+.install-hint {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(29, 27, 51, 0.45);
+}
+
+.install-hint__card {
+  width: 100%;
+  max-width: 420px;
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+}
+
+.install-hint__card h2 {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+
+.install-hint__card ol {
+  margin: 0 0 16px;
+  padding-left: 20px;
+  line-height: 1.6;
+}
+
+.install-hint__card .btn {
+  width: 100%;
 }

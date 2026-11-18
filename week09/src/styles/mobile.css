@@ -7,7 +7,7 @@
 }
 
 /* ---------- navigation: ☰ menu up to 900px ---------- */
-@media (max-width: 900px) {
+@media (max-width: 1080px) {
   .navbar {
     flex-wrap: wrap;
     justify-content: space-between;
@@ -157,5 +157,15 @@
 
   .app__main {
     padding-top: 12px;
+  }
+}
+
+@media (max-width: 1080px) {
+  .install-button {
+    margin: 6px 0 0;
+  }
+
+  .install-button__more {
+    display: inline;
   }
 }

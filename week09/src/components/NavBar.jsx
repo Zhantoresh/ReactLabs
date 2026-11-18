@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
 import { useAuth } from "../hooks/useAuth.js";
 import { useOnlineStatus } from "../hooks/useOnlineStatus.js";
+import InstallButton from "./InstallButton.jsx";
 
 function linkClass({ isActive }) {
   return isActive ? "navbar__link navbar__link--active" : "navbar__link";
@@ -88,7 +89,7 @@ export default function NavBar() {
             {link.label}
           </NavLink>
         ))}
-
+        <InstallButton />
         {/* while Firebase restores the session we do not know yet which buttons to show */}
         {loading ? null : user ? (
           <span className="navbar__user">
