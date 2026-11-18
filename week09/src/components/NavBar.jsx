@@ -1,5 +1,6 @@
 import { Link, NavLink, useNavigate } from "react-router";
 import { useAuth } from "../hooks/useAuth.js";
+import { useOnlineStatus } from "../hooks/useOnlineStatus.js";
 
 function linkClass({ isActive }) {
   return isActive ? "navbar__link navbar__link--active" : "navbar__link";
@@ -11,12 +12,14 @@ function buttonLinkClass({ isActive }) {
 
 export default function NavBar() {
   const { user, loading, logOut } = useAuth();
+  const online = useOnlineStatus();
   const navigate = useNavigate();
 
   const links = [
     { to: "/", label: "Home", end: true },
     { to: "/flights", label: "Flights" },
     { to: "/board", label: "Live board" },
+    // the lock shows that the page needs an account
     { to: "/dashboard", label: user ? "Dashboard" : "🔒 Dashboard" },
     { to: "/about", label: "About" },
   ];
@@ -28,9 +31,20 @@ export default function NavBar() {
 
   return (
     <header className="navbar">
-      <Link to="/" className="navbar__brand">
-        ✈ Departures Board
-      </Link>
+      <div className="navbar__start">
+        <Link to="/" className="navbar__brand">
+          ✈ Departures Board
+        </Link>
+        {/* online / offline indicator */}
+        <span
+          className={`net-status ${online ? "net-status--online" : "net-status--offline"}`}
+          role="status"
+          title={online ? "Connected to the internet" : "No internet connection: showing saved data"}
+        >
+          <span className="net-status__dot" aria-hidden="true" />
+          {online ? "Online" : "Offline"}
+        </span>
+      </div>
 
       <nav className="navbar__links">
         {links.map((link) => (
