@@ -13,6 +13,7 @@ const ROUTES = [
   { path: "/login", page: "Log in: email/password or Google" },
   { path: "/signup", page: "Sign up: email, password, confirm password" },
   { path: "/forgot-password", page: "Password reset email" },
+  { path: "/offline", page: "Offline page with Retry connection (works without internet)" },
   { path: "*", page: "Not Found (404)" },
 ];
 
@@ -21,9 +22,12 @@ const STACK = [
   "React Router",
   "TanStack Query",
   "Firebase Authentication",
+  "Firestore REST API",
+  "Service Worker (no libraries)",
+  "Cache Storage + IndexedDB",
+  "Web App Manifest",
   "Vite + env variables",
-  "Fake API (Promise + random delay + errors)",
-  "CSS",
+  "CSS (mobile from 320px)",
 ];
 
 export default function AboutPage() {
@@ -40,6 +44,12 @@ export default function AboutPage() {
           (email/password and Google) and server-data caching with TanStack Query. It also has protected routes and a
           live departures board like the screens in the airport, optimistic status changes, saved flights per user,
           prefetching on hover, password reset and email verification.
+        </p>
+        <p>
+          Now it is an installable Progressive Web App: a hand-written Service Worker pre-caches the app shell, keeps
+          flight data from Firestore for offline use (network-first) and images and fonts (cache-first), shows when you
+          are offline or looking at a saved copy, offers updates with one button, and the whole interface works on phones
+          from 320px. Status changes made offline are queued and sent automatically when the connection returns.
         </p>
       </div>
 
@@ -91,7 +101,14 @@ export default function AboutPage() {
               <code>RequireAuth</code> / <code>GuestOnly</code> — layout routes for protected and guest-only pages
             </li>
             <li>
-              <code>services/service.js</code> — all flight API requests
+              <code>services/service.js</code> — all flight API requests (Firestore REST)
+            </li>
+            <li>
+              <code>public/sw.js</code> — Service Worker: pre-cache, versioned caches, caching strategies
+            </li>
+            <li>
+              <code>services/serviceWorker.js</code>, <code>outbox.js</code>, <code>install.js</code> — updates,
+              offline queue, install button
             </li>
             <li>
               <code>services/auth.js</code> + <code>firebase.js</code> — Firebase Authentication
@@ -100,7 +117,7 @@ export default function AboutPage() {
               <code>services/queryClient.js</code> — TanStack Query cache settings and query keys
             </li>
             <li>
-              <code>styles/</code> — global, layout, component and page styles
+              <code>styles/</code> — global, layout, component, page and mobile styles
             </li>
           </ul>
 
