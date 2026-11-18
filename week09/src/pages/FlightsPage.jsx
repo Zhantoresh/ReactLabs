@@ -6,6 +6,7 @@ import StateMessage from "../components/StateMessage.jsx";
 import { useAuth } from "../hooks/useAuth.js";
 import { useFlightsList } from "../hooks/useFlightsList.js";
 import { PAGE_SIZE } from "../services/service.js";
+import CachedDataNotice from "../components/CachedDataNotice.jsx";
 
 const FILTER_KEYS = ["search", "status", "terminal"];
 
@@ -81,7 +82,7 @@ export default function FlightsPage() {
         onChange={handleFilterChange}
         onReset={handleReset}
       />
-
+      <CachedDataNotice cachedAt={list.cachedAt} />
       {list.status === "loading" && <StateMessage type="loading" title="Loading flights…" />}
 
       {list.refreshFailed && (

@@ -306,3 +306,16 @@
     grid-template-columns: 1fr;
   }
 }
+
+.cached-notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px solid #f0d58a;
+  border-radius: var(--radius);
+  background: #fff8e1;
+  color: #6b5200;
+  line-height: 1.45;
+}

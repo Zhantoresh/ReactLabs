@@ -9,6 +9,7 @@ import { useAuth } from "../hooks/useAuth.js";
 import { useFlight } from "../hooks/useFlight.js";
 import { useChangeFlightStatus, useDeleteFlight, useUpdateFlight } from "../hooks/useFlightMutations.js";
 import { formatDeparture, show, STATUS_ACTIONS } from "../utils/flights.js";
+import CachedDataNotice from "../components/CachedDataNotice.jsx";
 
 export default function FlightDetailsPage() {
   const { id } = useParams();
@@ -19,7 +20,7 @@ function FlightDetails({ id }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth(); 
-  const { flight, status, error, reload } = useFlight(id);
+  const { flight, cachedAt, status, error, reload } = useFlight(id);
   const { prev, next } = useAdjacentFlights(id);
   const updateMutation = useUpdateFlight();
   const statusMutation = useChangeFlightStatus();
@@ -144,7 +145,7 @@ function FlightDetails({ id }) {
   return (
     <section className="page">
       {links}
-
+    <CachedDataNotice cachedAt={cachedAt} />
       {notice && <StateMessage type="info" title={notice} />}
       {actionError && <StateMessage type="error" title={actionError} />}
 

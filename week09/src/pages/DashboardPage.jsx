@@ -3,7 +3,7 @@ import FlightCard from "../components/FlightCard.jsx";
 import StateMessage from "../components/StateMessage.jsx";
 import { useAllFlights } from "../hooks/useAllFlights.js";
 import { STATUSES, TERMINALS } from "../utils/flights.js";
-
+import CachedDataNotice from "../components/CachedDataNotice.jsx";
 
 function countBy(items, field) {
   const counts = {};
@@ -21,7 +21,7 @@ function percent(part, total) {
 }
 
 export default function DashboardPage() {
-  const { flights, status, error, reload } = useAllFlights();
+  const { flights, status, error, cachedAt, reload } = useAllFlights();
 
   // Interactive filter: terminal. Kept in the URL (?terminal=T2) so it survives refresh.
   const [searchParams, setSearchParams] = useSearchParams();
@@ -109,7 +109,7 @@ export default function DashboardPage() {
           </button>
         </div>
       </div>
-
+    <CachedDataNotice cachedAt={cachedAt} />
       {totalFlights === 0 ? (
         <StateMessage type="empty" title="No flights for this terminal">
           Choose another terminal or <Link to="/flights">add a flight</Link>.

@@ -3,7 +3,7 @@ import FlightCard from "../components/FlightCard.jsx";
 import StateMessage from "../components/StateMessage.jsx";
 import { useAllFlights } from "../hooks/useAllFlights.js";
 import { useFavorites } from "../hooks/useFavorites.js";
-
+import CachedDataNotice from "../components/CachedDataNotice.jsx";
 
 export default function MyFlightsPage() {
   const favorites = useFavorites(); 
@@ -23,7 +23,7 @@ export default function MyFlightsPage() {
           <p className="page__subtitle">Flights you saved with ☆. Only you can see this list.</p>
         </div>
       </div>
-
+      <CachedDataNotice cachedAt={all.cachedAt} />
       {loading && <StateMessage type="loading" title="Loading your flights…" />}
 
       {!loading && error && (

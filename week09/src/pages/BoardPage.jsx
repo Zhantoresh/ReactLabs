@@ -3,10 +3,11 @@ import StateMessage from "../components/StateMessage.jsx";
 import { useAllFlights } from "../hooks/useAllFlights.js";
 import { useNow } from "../hooks/useNow.js";
 import { formatDeparture, STATUS_REMARKS, TERMINALS } from "../utils/flights.js";
+import CachedDataNotice from "../components/CachedDataNotice.jsx";
 
 const REFRESH_MS = 30000; 
 export default function BoardPage() {
-  const { flights, status, error, updatedAt, refreshFailed, isFetching, reload } = useAllFlights({
+  const { flights, status, error, updatedAt, refreshFailed, isFetching, cachedAt, reload } = useAllFlights({
     refetchInterval: REFRESH_MS,
   });
   const refreshing = isFetching && status === "success";
@@ -20,6 +21,7 @@ export default function BoardPage() {
 
   return (
     <section className="page board-page">
+          <CachedDataNotice cachedAt={cachedAt} />
       <div className="board">
         <header className="board__header">
           <div>
