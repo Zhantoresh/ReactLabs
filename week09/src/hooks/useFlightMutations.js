@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFlight, deleteFlight, updateFlight } from "../services/service.js";
 import { flightKeys } from "../services/queryClient.js";
 
+
 function invalidateFlightLists(queryClient) {
   queryClient.invalidateQueries({ queryKey: flightKeys.lists() });
   queryClient.invalidateQueries({ queryKey: flightKeys.everything() });
@@ -12,7 +13,7 @@ export function useCreateFlight() {
   return useMutation({
     mutationFn: (values) => createFlight(values),
     onSuccess: ({ flight }) => {
-      queryClient.setQueryData(flightKeys.detail(flight.id), flight); 
+      queryClient.setQueryData(flightKeys.detail(flight.id), { flight, cachedAt: null });
       invalidateFlightLists(queryClient);
     },
   });
@@ -24,8 +25,7 @@ export function useUpdateFlight() {
   return useMutation({
     mutationFn: ({ id, changes }) => updateFlight(id, changes),
     onSuccess: (updated) => {
-
-      queryClient.setQueryData(flightKeys.detail(updated.id), updated);
+      queryClient.setQueryData(flightKeys.detail(updated.id), { flight: updated, cachedAt: null });
       invalidateFlightLists(queryClient);
     },
   });
@@ -38,13 +38,13 @@ export function useChangeFlightStatus() {
   return useMutation({
     mutationFn: ({ id, status }) => updateFlight(id, { status }),
 
-   
+
     onMutate: async ({ id, status }) => {
       const key = flightKeys.detail(id);
-
+      
       await queryClient.cancelQueries({ queryKey: key });
-      const previous = queryClient.getQueryData(key); // snapshot for rollback
-      queryClient.setQueryData(key, (old) => (old ? { ...old, status } : old));
+      const previous = queryClient.getQueryData(key); 
+      queryClient.setQueryData(key, (old) => (old ? { ...old, flight: { ...old.flight, status } } : old));
       return { previous }; 
     },
 
@@ -54,10 +54,12 @@ export function useChangeFlightStatus() {
       }
     },
 
+    
     onSuccess: (updated) => {
-      queryClient.setQueryData(flightKeys.detail(updated.id), updated);
+      queryClient.setQueryData(flightKeys.detail(updated.id), { flight: updated, cachedAt: null });
     },
 
+   
     onSettled: () => {
       invalidateFlightLists(queryClient);
     },

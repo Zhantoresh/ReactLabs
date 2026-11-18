@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getAllFlights } from "../services/service.js";
 import { flightKeys } from "../services/queryClient.js";
 
+
 export function useAllFlights(options = {}) {
   const query = useQuery({
     queryKey: flightKeys.everything(),
@@ -10,12 +11,13 @@ export function useAllFlights(options = {}) {
   });
 
   return {
-    flights: query.data ?? [],
+    flights: query.data?.flights ?? [],
     status: query.isPending ? "loading" : query.isError && !query.data ? "error" : "success",
     error: query.error?.message ?? "",
     updatedAt: query.dataUpdatedAt || null, 
     isFetching: query.isFetching,
     refreshFailed: query.isError && Boolean(query.data), 
+    cachedAt: query.data?.cachedAt ?? null, 
     reload: () => query.refetch(),
   };
 }

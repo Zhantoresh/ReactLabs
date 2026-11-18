@@ -5,12 +5,15 @@ import { flightKeys } from "../services/queryClient.js";
 
 export function useFlightsList(params) {
   const query = useQuery({
+  
     queryKey: flightKeys.list(params),
     queryFn: () => getFlights(params),
+   
     placeholderData: keepPreviousData,
   });
 
-  const result = query.data ?? { data: [], total: 0, totalPages: 0 };
+
+  const result = query.data ?? { data: [], total: 0, totalPages: 0, cachedAt: null };
 
   return {
     data: result.data,
@@ -20,6 +23,7 @@ export function useFlightsList(params) {
     error: query.error?.message ?? "",
     isUpdating: query.isFetching, 
     refreshFailed: query.isError && Boolean(query.data),
+    cachedAt: result.cachedAt, 
     reload: () => query.refetch(),
   };
 }

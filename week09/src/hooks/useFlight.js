@@ -2,11 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { getFlight, NotFoundError } from "../services/service.js";
 import { flightKeys } from "../services/queryClient.js";
 
+
 export function useFlight(id) {
   const query = useQuery({
     queryKey: flightKeys.detail(id),
     queryFn: () => getFlight(id),
-    retry: (failureCount, error) => !(error instanceof NotFoundError) && failureCount < 1,
   });
 
   let status = "success";
@@ -15,7 +15,8 @@ export function useFlight(id) {
   else if (query.isError && !query.data) status = "error";
 
   return {
-    flight: query.data ?? null,
+    flight: query.data?.flight ?? null,
+    cachedAt: query.data?.cachedAt ?? null, 
     status,
     error: query.error?.message ?? "",
     reload: () => query.refetch(),
