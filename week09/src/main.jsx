@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import App from "./App.jsx";
 import AuthProvider from "./context/AuthProvider.jsx";
 import { queryClient } from "./services/queryClient.js";
+import { initInstallPrompt } from "./services/install.js";
 import { registerServiceWorker } from "./services/serviceWorker.js";
 import "./styles/global.css";
 import "./styles/layout.css";
@@ -15,7 +16,7 @@ import "./styles/mobile.css";
 
 
 registerServiceWorker();
-
+initInstallPrompt();
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
