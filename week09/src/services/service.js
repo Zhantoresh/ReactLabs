@@ -1,6 +1,6 @@
 import { auth } from "../firebase.js";
 import { documentToFlight, toFirestoreFields } from "../api/firestoreFormat.js";
-
+import { readOutbox } from "../api/outboxDb.js";
 
 export const PAGE_SIZE = 8;
 
@@ -72,6 +72,18 @@ async function request(url, { method = "GET", body, withToken = false } = {}) {
 // ---------- reading ----------
 
 
+async function withQueuedStatuses(flights) {
+  await auth.authStateReady();
+  const uid = auth.currentUser?.uid;
+  if (!uid) return flights;
+  const queued = (await readOutbox().catch(() => [])).filter((item) => item.uid === uid);
+  if (queued.length === 0) return flights;
+  const statusById = new Map(queued.map((item) => [item.flightId, item.status]));
+  return flights.map((flight) =>
+    statusById.has(flight.id) ? { ...flight, status: statusById.get(flight.id), pendingStatus: true } : flight,
+  );
+}
+
 async function fetchAllDocuments() {
   const flights = [];
   let cachedAt = null;
@@ -84,7 +96,7 @@ async function fetchAllDocuments() {
     cachedAt = cachedAt ?? pageCachedAt;
     pageToken = body.nextPageToken ?? "";
   } while (pageToken);
-  return { flights, cachedAt };
+  return { flights: await withQueuedStatuses(flights), cachedAt };
 }
 
 function applyListParams(flights, params) {
@@ -152,7 +164,8 @@ export async function getFlight(id) {
   }
   try {
     const { body, cachedAt } = await request(buildUrl(`/${id}`));
-    return { flight: documentToFlight(body), cachedAt };
+    const [flight] = await withQueuedStatuses([documentToFlight(body)]);
+    return { flight, cachedAt };
   } catch (err) {
     if (err instanceof NotFoundError) throw new NotFoundError(`Flight #${id} was not found`);
     throw err;
