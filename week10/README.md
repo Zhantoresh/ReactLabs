@@ -1,23 +1,24 @@
-# Task 7 — Progressive Web App (Departures Board)
+# Task 8 — Redux Toolkit (Departures Board)
 
-The departures board from the previous homeworks (React Router, Firebase Authentication, TanStack Query)
-turned into an **installable Progressive Web App**: Web App Manifest, a hand-written Service Worker with
-versioned caches and updates, two runtime caching strategies, an offline page, an online/offline indicator
-and a mobile interface from 320px. All features of week07 and week08 are kept.
+The departures board from the previous homeworks (React Router, Firebase Authentication, PWA) with its
+**whole data layer refactored to Redux Toolkit**: one store, three feature slices, async thunks for every
+request and mutation, normalized flights and memoized selectors. TanStack Query was removed completely, so
+server data lives in one place only. Authentication stays in `AuthContext`, temporary form and UI state stays
+local in components. All features of week07–week09 are kept: protected routes, CRUD, the live board, the PWA
+and the offline mode.
 
-- Deployed: https://zhantoresh.github.io/ReactLabs/week09/
-- Repo: https://github.com/Zhantoresh/ReactLabs (folder `week09`)
+- Deployed: https://zhantoresh.github.io/ReactLabs/week10/
+- Repo: https://github.com/Zhantoresh/ReactLabs/tree/main/week10
 
 ## Run locally
 
-    cd week09
+    cd week10
     npm install
     cp .env.example .env.local   # put your Firebase web-app config into .env.local
     npm run dev                  # development (no Service Worker)
 
     npm run build && npm run preview   # production build: Service Worker, offline, install
 
-The Service Worker is registered only in the production build (`npm run preview` or the deployed site).
 `.env.local` is in `.gitignore`; `.env.example` lists the variables.
 
 ## Firebase setup
@@ -35,39 +36,123 @@ The Service Worker is registered only in the production build (`npm run preview`
 
        SEED_EMAIL=you@example.com SEED_PASSWORD='secret' npm run seed
 
-## Why the flights moved to Firestore
+## Redux architecture
 
-The fake API from the earlier homeworks kept data in `localStorage` and made no network requests,
-so a Service Worker had nothing to cache. The flights now live in Firestore and are read through its
-**REST API with `fetch()`** (`src/services/service.js`):
+    src/
+      store/index.js               configureStore: flights + favorites + outbox
+      store/requestHelpers.js      toRejectValue (error -> { message, kind }), withRetry, STALE_AFTER_MS
+      features/flights/            flightsSlice.js (entity adapter, thunks, extraReducers), flightsSelectors.js
+      features/favorites/          favoritesSlice.js (thunks, reducer, selectors)
+      features/outbox/             outboxSlice.js (offline queue: thunks, selectors)
+      services/                    API only: Firestore REST, favorites, auth, Service Worker — no Redux
+      hooks/                       useSelector / useDispatch wrappers used by the pages
+      utils/flightList.js          pure filter / sort / paginate functions used by the selectors
 
-- reads (list, details) are public **GET requests without a token** → the Service Worker caches them;
-- writes (create, edit, status, delete) send the user's ID token (`Authorization: Bearer …`) and are never cached;
-- search, filters, sorting and pagination work exactly as before (done in the service).
+Layers: **UI components → hooks (useSelector / useDispatch) → thunks → services → network**.
+Components never import the store, `fetch`, Firebase or IndexedDB. `main.jsx` wraps the app in
+`<Provider store={store}>`, then `HashRouter` and `AuthProvider`.
 
-## 1. Manifest & installation
+What is **not** in Redux, on purpose:
+
+| State | Where | Why |
+| --- | --- | --- |
+| signed-in user | `AuthContext` (`onAuthStateChanged`) | required by the task; Firebase owns it |
+| filters, sort, page | URL search params | shareable links, Back button |
+| text being typed, form fields, burger menu, dialogs | `useState` in the component | temporary UI state |
+| online / offline, install prompt, SW update | small hooks | browser events, not app data |
+
+### Slices
+
+| Slice | State | Thunks / reducers |
+| --- | --- | --- |
+| `flights` | `createEntityAdapter` (`ids`, `entities`, sorted by departure time); `list: { status, error, lastFetched, cachedAt, requestId }`; `details[id]` with the same fields per flight; `previousStatus` for rollback | `fetchFlights`, `fetchFlightById`, `createFlight`, `updateFlight`, `changeFlightStatus`, `deleteFlight` |
+| `favorites` | `{ uid, ids, status, error }` — saved flights of the signed-in user | `fetchFavorites`, `toggleFavorite` (optimistic), reducer `favoritesCleared` (on logout) |
+| `outbox` | `{ items, loaded, flushing }` — status changes made offline (IndexedDB) | `loadOutbox`, `queueStatusChange`, `discardChange`, `flushOutbox` |
+
+Flights are **normalized**: the list, the live board, the dashboard, the details page and "My flights" all read
+the same `entities`. Favorites keep only ids and get the flights through a selector, so nothing is duplicated.
+
+### Async thunks (`createAsyncThunk`)
+
+| Thunk | Kind | Request | Notes |
+| --- | --- | --- | --- |
+| `fetchFlights({ force })` | list | GET all flights | `condition`: skipped while loading or if loaded < 60 s ago (unless `force`) |
+| `fetchFlightById({ id, force })` | details | GET one flight | same `condition` per id; 404 → status `notfound`, the flight is removed |
+| `createFlight(values)` | mutation | POST | adds the flight, then `fetchFlights({ force: true })` |
+| `updateFlight({ id, changes })` | mutation | PATCH | updates the entity, then reloads |
+| `changeFlightStatus({ id, status, uid })` | mutation | PATCH | **optimistic**: `pending` sets the new status, `rejected` rolls back; offline → `queueStatusChange` |
+| `deleteFlight(id)` | mutation | DELETE | removes the entity, then reloads |
+| `fetchFavorites(uid)`, `toggleFavorite({ uid, flightId })` | favorites | storage per user | `condition`: not again for the same uid |
+| `loadOutbox`, `queueStatusChange`, `discardChange`, `flushOutbox(uid)` | offline queue | IndexedDB + PATCH | `flushOutbox` runs once at a time (`condition: !flushing`) |
+
+Every thunk is handled in `extraReducers` with **pending / fulfilled / rejected**:
+
+- **loading** — `status: "loading"`; pages show "Loading…" / skeletons;
+- **errors** — thunks return `rejectWithValue({ message, kind })` with `kind` = `offline`, `notfound` or `error`,
+  so pages show the right message (offline message, "flight not found", error with **Retry**);
+- **empty results** — the selector returns an empty page → "No flights match these filters";
+- **retries** — `withRetry` repeats a failed read once after 800 ms; **Retry / Reload** buttons dispatch with `force`;
+- **stale requests** — `pending` stores `action.meta.requestId`; a `fulfilled` / `rejected` with another id
+  (an older request that finished late) is ignored;
+- **after mutations** — the changed entity is updated at once and the collection is reloaded in the background;
+- **no extra requests** — `condition` cancels a thunk when the same data is loading or still fresh.
+
+Pages call thunks through hooks; mutations use `.unwrap()` to get the result or catch the error in the form:
+
+    const createFlight = useCreateFlight();
+    const { flight } = await createFlight(values);   // dispatch(createFlight(values)).unwrap()
+
+### Selectors
+
+| Selector | Memoized | Used by |
+| --- | --- | --- |
+| `selectAllFlights`, `selectFlightByNumericId` | entity adapter | board, dashboard |
+| `selectFlightsListState`, `selectFlightDetailState(state, id)`, `selectFlightById(state, id)` | — | list, details |
+| `selectFlightsPage(state, { search, status, terminal, sort, page, limit })` | **`createSelector`** | Flights page: filter → sort → paginate |
+| `selectAdjacentFlights(state, id)` | **`createSelector`** | previous / next departure on the details page |
+| `selectFavoriteFlights` | **`createSelector`** | "My flights" (favorite ids → flight objects) |
+| `selectOutboxItemsForUser(state, uid)` | **`createSelector`** | offline queue bar |
+| `selectFavoriteIds`, `selectIsFavorite(state, id)`, `selectOutboxFlushing` | — | ☆ button, queue bar |
+
+`selectFlightsPage` gets each parameter through its own input selector (primitive values), so the result is
+recalculated only when the flights or one of the filters change. Changing a filter, the sort or the page makes
+**no network request** — the data is already in the store.
+
+### URL, filters and debounce
+
+Search, status, terminal, sort and page live in the URL (`useSearchParams`), as before. The search box keeps the
+typed text in local state and writes it to the URL **400 ms after the last key press** (`hooks/useDebouncedValue.js`,
+`components/FlightFilters.jsx`). Reset filters and the Back button update the box from the URL.
+
+## PWA (kept from week09)
+
+The flights are read through the Firestore **REST API with `fetch()`** (`src/services/service.js`): reads are
+public GET requests without a token, so the Service Worker caches them; writes send the user's ID token and are
+never cached.
+
+### 1. Manifest & installation
 
 `public/manifest.json`, linked in `index.html` (`<link rel="manifest">`, `theme-color`, `apple-touch-icon`):
 
 | Field | Value |
 | --- | --- |
 | `name` / `short_name` | Departures Board — Almaty International / Departures |
-| `start_url` / `scope` | `./` → `/ReactLabs/week09/` (relative to the manifest) |
+| `start_url` / `scope` | `./` → `/ReactLabs/week10/` (relative to the manifest) |
 | `display` | `standalone` |
 | `theme_color` / `background_color` | `#5b4fe0` / `#f7f6fc` |
 | `icons` | 192×192, 512×512 and a 512×512 maskable icon (`public/icons/`) |
 
 The deployed app is installable in Chrome / Edge / Android; on iPhone via Share → Add to Home Screen.
 
-## 2. Service Worker lifecycle
+### 2. Service Worker lifecycle
 
 `public/sw.js` — plain JavaScript, no libraries. A small Vite plugin in `vite.config.js` runs after
 `vite build` and writes into `dist/sw.js` the list of all built files and a **VERSION** (hash of those files).
 
 | Event | What happens |
 | --- | --- |
-| `install` | pre-caches the app shell into `departures-week09-shell-<VERSION>`: `index.html`, every built JS/CSS file, icons, manifest, `offline.html` |
-| `activate` | deletes every `departures-week09-*` cache that is not current (old versions), then `clients.claim()` |
+| `install` | pre-caches the app shell into `departures-week10-shell-<VERSION>`: `index.html`, every built JS/CSS file, icons, manifest, `offline.html` |
+| `activate` | deletes every `departures-week10-*` cache that is not current (old versions), then `clients.claim()` |
 | `fetch` | chooses a strategy by request type (see below) |
 | `message` | `SKIP_WAITING` from the page activates a waiting new version |
 
@@ -78,13 +163,13 @@ reloads once with the new version, and `activate` removes the old cache. Nobody 
 The browser checks for updates on every navigation; the app also calls `registration.update()` every 30 minutes
 and when the tab becomes visible.
 
-## 3. Runtime caching
+### 3. Runtime caching
 
 | Requests | Strategy | Cache | Limit |
 | --- | --- | --- | --- |
 | app shell (pre-cached files) | cache first | `shell-<VERSION>` | replaced by every deploy |
-| images and fonts | **cache first** | `departures-week09-static-v1` | 60 entries |
-| Firestore flights (GET, no token) | **network first**, 5 s timeout, cache as fallback | `departures-week09-api-v1` | 50 entries, 7 days |
+| images and fonts | **cache first** | `departures-week10-static-v1` | 60 entries |
+| Firestore flights (GET, no token) | **network first**, 5 s timeout, cache as fallback | `departures-week10-api-v1` | 50 entries, 7 days |
 | Firebase Auth, Google sign-in, profile photos, requests with `Authorization`, POST/PATCH/DELETE | network only | — | never cached |
 
 - **Offline access:** previously fetched lists and flights are answered from `api-v1` when the network fails.
@@ -96,11 +181,10 @@ and when the tab becomes visible.
 - **Failed requests:** without a connection and without a saved copy the service throws `OfflineError`;
   pages show the offline message instead of crashing. Changes without a connection fail with a clear message
   (or go to the offline queue, see Extra features).
-- **TanStack Query** (`src/services/queryClient.js`): `networkMode: "offlineFirst"` (requests still run offline,
-  so the Service Worker can answer them), a saved copy is stale at once (`staleTime` function),
-  `refetchOnReconnect` reloads fresh data when the connection returns.
+- **Redux:** a saved copy (`cachedAt` set) is never treated as fresh, so the next visit asks the network again;
+  `useAutoRefresh` reloads the flights when the connection returns and when the tab becomes visible.
 
-## 4. Offline page and connectivity
+### 4. Offline page and connectivity
 
 - **`/offline`** (`pages/OfflinePage.jsx`) — styled message, **Retry connection**, link to saved flights;
   not lazy-loaded and pre-cached, so it opens with no connection at all.
@@ -109,9 +193,9 @@ and when the tab becomes visible.
 - **Pages whose data was never loaded** show the same offline message (`OfflineMessage`) instead of an error.
 - **Navigation the Service Worker cannot complete** (a page outside the cached app) → `public/offline.html`.
 - **Indicator:** "● Online / ● Offline" next to the logo and a bar under the menu while offline.
-- **Back online:** queries refetch automatically and the "saved copy" notices disappear.
+- **Back online:** the flights are reloaded automatically and the "saved copy" notices disappear.
 
-## 5. Mobile
+### 5. Mobile
 
 `src/styles/mobile.css` (loaded last):
 
@@ -122,18 +206,19 @@ and when the tab becomes visible.
   on narrow screens so destinations stay readable;
 - **landscape phones**: the bar is not sticky and the menu scrolls.
 
-## Extra features (bonus)
+### Extra features (bonus)
 
-### Offline queue for status changes
+#### Offline queue for status changes
 
 Without a connection a status change is **not lost**:
 
-1. `useChangeFlightStatus` gets `OfflineError` and saves the change in **IndexedDB** (`api/outboxDb.js`,
+1. The `changeFlightStatus` thunk gets `OfflineError` and dispatches `queueStatusChange`, which saves the
+   change in **IndexedDB** (`api/outboxDb.js`,
    key `[uid, flightId]`, so a newer change of the same flight replaces the older one).
 2. The new status is shown at once with ⏳ — on the details page, in the list and on the live board, even after
    a reload (`withQueuedStatuses` in `service.js` puts queued statuses over the data).
 3. A bar shows "⏳ 2 changes waiting to be sent" with **Discard** for each change.
-4. When the connection returns (`online` event), after login or on **Send now**, `flushOutbox` sends the changes
+4. When the connection returns (`online` event), after login or on **Send now**, the `flushOutbox` thunk sends the changes
    with a fresh ID token, removes them from the queue and reloads the flights. Result: "✓ 2 offline changes sent".
 5. Conflicts: a flight deleted while offline is dropped with a message; other errors stay in the queue with the
    error text.
@@ -141,7 +226,7 @@ Without a connection a status change is **not lost**:
 Sending is done by the page, not by Background Sync in the Service Worker: Firestore needs the user's
 Firebase ID token (refreshed in the page), and the `online` event works in every browser, including Safari.
 
-### Install button
+#### Install button
 
 `services/install.js` keeps the `beforeinstallprompt` event and shows **⬇ Install** in the menu;
 it opens the browser install dialog. On iPhone it shows "Share → Add to Home Screen" instructions.
@@ -151,41 +236,19 @@ The button is hidden when the app is installed (`appinstalled`, `display-mode: s
 
 - **Routing (week07):** nested and protected routes, `/flights/:id`, filters and pagination in the URL,
   lazy pages, live board with auto-refresh, previous/next departure, 404.
-- **Auth and caching (week08):** Firebase email/password + Google, `AuthProvider` with `onAuthStateChanged`,
-  `RequireAuth` / `GuestOnly`, profile, password reset, email verification; TanStack Query with query keys
-  `["flights","list",params]`, `["flights","detail",id]`, `["flights","all"]`, `["favorites",uid]`,
-  invalidation after create / edit / status / delete, optimistic status, saved flights, prefetch on hover.
-
-## Structure (new in week09)
-
-    public/
-      manifest.json, icons/        Web App Manifest and icons
-      sw.js                        Service Worker
-      offline.html                 offline fallback of the Service Worker
-    scripts/seed-firestore.mjs     uploads the seed flights to Firestore
-    vite.config.js                 plugin: pre-cache list + VERSION for sw.js
-    src/
-      api/firestoreFormat.js       Firestore REST <-> flight objects
-      api/outboxDb.js              IndexedDB for the offline queue
-      services/service.js          flights API on Firestore REST (+ cachedAt, OfflineError)
-      services/serviceWorker.js    registration and update detection
-      services/connection.js       real connection check
-      services/outbox.js           offline queue: queue / send / discard
-      services/install.js          beforeinstallprompt / appinstalled
-      hooks/                       useAppUpdate, useOnlineStatus, useOutbox, useInstallApp (+ previous hooks)
-      components/                  UpdateBanner, OfflineBar, OfflineMessage, CachedDataNotice, OutboxBar,
-                                   InstallButton (+ previous components)
-      pages/OfflinePage.jsx        /offline
-      styles/mobile.css            mobile version
-
-UI components never call `fetch`, Firebase, IndexedDB or `localStorage` directly — only through hooks and services.
+- **Auth (week08):** Firebase email/password + Google, `AuthProvider` with `onAuthStateChanged`,
+  `RequireAuth` / `GuestOnly`, profile, password reset, email verification, saved flights, prefetch on hover.
+  The caching part of week08 (TanStack Query) is now done by the Redux slices above.
 
 ## How to check (Chrome DevTools)
 
 - **Application → Manifest:** fields, icons, no installability errors.
 - **Application → Service workers:** `sw.js` activated; tick **Offline** to test offline mode.
 - **Application → Cache storage:** `shell-<VERSION>`, `static-v1`, `api-v1`.
-- **Application → IndexedDB → departures-week09 → outbox:** queued offline changes.
+- **Application → IndexedDB → departures-week10 → outbox:** queued offline changes.
 - **Network:** Firestore GET requests show `(ServiceWorker)`; offline they return `200 (from service worker)`
   with `X-SW-From-Cache: 1`.
 - **Device toolbar (Cmd + Shift + M):** 320px, iPhone, landscape.
+- **Redux DevTools** (optional browser extension): actions such as `flights/fetchAll/pending` →
+  `flights/fetchAll/fulfilled`, `flights/changeStatus/pending` → `…/fulfilled` or `…/rejected`, and the state tree
+  `flights`, `favorites`, `outbox`.
