@@ -1,54 +1,41 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useAuth } from "./useAuth.js";
-import { getFavorites, toggleFavorite } from "../services/favorites.js";
-import { favoriteKeys } from "../services/queryClient.js";
+import {
+  fetchFavorites,
+  selectFavoriteFlights,
+  selectFavoritesState,
+  toggleFavorite,
+} from "../features/favorites/favoritesSlice.js";
 
 
 export function useFavorites() {
+  const dispatch = useDispatch();
   const { user } = useAuth();
   const uid = user?.uid;
+  const favorites = useSelector(selectFavoritesState);
+  const flights = useSelector(selectFavoriteFlights);
 
-  const query = useQuery({
-    queryKey: favoriteKeys.byUser(uid),
-    queryFn: () => getFavorites(uid),
-    enabled: Boolean(uid), 
-  });
+  useEffect(() => {
+    if (uid) dispatch(fetchFavorites(uid));
+  }, [dispatch, uid]);
 
-  const ids = query.data ?? [];
+  const ids = uid ? favorites.ids : [];
   return {
     ids,
+    flights, 
     isSaved: (flightId) => ids.includes(Number(flightId)),
-    status: query.isPending ? "loading" : query.isError && !query.data ? "error" : "success",
-    error: query.error?.message ?? "",
-    reload: () => query.refetch(),
+    status: favorites.status === "failed" ? "error" : favorites.status === "succeeded" || !uid ? "success" : "loading",
+    error: favorites.error?.message ?? "",
+    reload: () => uid && dispatch(fetchFavorites(uid)),
   };
 }
 
 
 export function useToggleFavorite() {
+  const dispatch = useDispatch();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const key = favoriteKeys.byUser(user?.uid);
-
-  return useMutation({
-    mutationFn: (flightId) => toggleFavorite(user.uid, flightId),
-
-    onMutate: async (flightId) => {
-      await queryClient.cancelQueries({ queryKey: key });
-      const previous = queryClient.getQueryData(key); 
-      const id = Number(flightId);
-      queryClient.setQueryData(key, (old = []) =>
-        old.includes(id) ? old.filter((saved) => saved !== id) : [...old, id],
-      );
-      return { previous };
-    },
-
-    onError: (_error, _flightId, context) => {
-      queryClient.setQueryData(key, context?.previous ?? []); 
-    },
-
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: key }); 
-    },
-  });
+  return (flightId) => {
+    if (user) dispatch(toggleFavorite({ uid: user.uid, flightId }));
+  };
 }

@@ -14,7 +14,7 @@ export default function MyFlightsPage() {
   const error = favorites.status === "error" ? favorites : all.status === "error" ? all : null;
 
 
-  const saved = all.flights.filter((flight) => favorites.ids.includes(flight.id));
+  const saved = favorites.flights; 
 
   return (
     <section className="page">

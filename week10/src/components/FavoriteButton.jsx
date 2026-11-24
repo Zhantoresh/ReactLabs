@@ -14,7 +14,7 @@ export default function FavoriteButton({ flightId, variant = "icon" }) {
   function handleClick(event) {
     event.preventDefault();
     event.stopPropagation();
-    toggle.mutate(flightId);
+    toggle(flightId);
   }
 
   if (variant === "button") {
