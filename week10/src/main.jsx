@@ -1,11 +1,9 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { HashRouter } from "react-router";
-import { QueryClientProvider } from "@tanstack/react-query";
 import { Provider } from "react-redux";
 import App from "./App.jsx";
 import AuthProvider from "./context/AuthProvider.jsx";
-import { queryClient } from "./services/queryClient.js";
 import { store } from "./store/index.js";
 import { initInstallPrompt } from "./services/install.js";
 import { registerServiceWorker } from "./services/serviceWorker.js";
@@ -22,13 +20,11 @@ initInstallPrompt();
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <Provider store={store}>
-      <QueryClientProvider client={queryClient}>
-        <HashRouter>
-          <AuthProvider>
-            <App />
-          </AuthProvider>
-        </HashRouter>
-      </QueryClientProvider>
+      <HashRouter>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </HashRouter>
     </Provider>
   </StrictMode>,
 );
