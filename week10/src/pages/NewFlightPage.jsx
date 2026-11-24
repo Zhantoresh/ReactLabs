@@ -7,7 +7,7 @@ import { useCreateFlight } from "../hooks/useFlightMutations.js";
 
 export default function NewFlightPage() {
   const navigate = useNavigate();
-  const createMutation = useCreateFlight();
+  const createFlight = useCreateFlight();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -15,11 +15,9 @@ export default function NewFlightPage() {
     setSaving(true);
     setError("");
     try {
-      const { flight, warning } = await createMutation.mutateAsync(values);
-      navigate(`/flights/${flight.id}`, {
-        replace: true,
-        state: { notice: warning || `Flight ${flight.name} was created.` },
-      });
+      const { flight, warning } = await createFlight(values);
+      // "created" is shown as a toast; a warning (e.g. saved only on this device) stays on the page
+      navigate(`/flights/${flight.id}`, { replace: true, state: warning ? { notice: warning } : undefined });
     } catch (err) {
       setError(`Create failed: ${err.message}`);
       setSaving(false);

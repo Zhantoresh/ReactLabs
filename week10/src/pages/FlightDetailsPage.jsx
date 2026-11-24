@@ -7,7 +7,7 @@ import StatusBadge from "../components/StatusBadge.jsx";
 import { useAdjacentFlights } from "../hooks/useAllFlights.js";
 import { useAuth } from "../hooks/useAuth.js";
 import { useFlight } from "../hooks/useFlight.js";
-import { useChangeFlightStatus, useDeleteFlight, useUpdateFlight } from "../hooks/useFlightMutations.js";
+import { useChangeFlightStatus, useRemoveFlight, useUpdateFlight } from "../hooks/useFlightMutations.js";
 import { formatDeparture, show, STATUS_ACTIONS } from "../utils/flights.js";
 import CachedDataNotice from "../components/CachedDataNotice.jsx";
 import OfflineMessage from "../components/OfflineMessage.jsx";
@@ -25,12 +25,11 @@ function FlightDetails({ id }) {
   const { prev, next } = useAdjacentFlights(id);
   const updateFlight = useUpdateFlight();
   const changeStatus = useChangeFlightStatus();
-  const deleteFlight = useDeleteFlight();
+  const removeFlight = useRemoveFlight();
 
   const [isEditing, setIsEditing] = useState(false);
-  const [pendingAction, setPendingAction] = useState(null); // null | "edit" | "status" | "delete"
+  const [pendingAction, setPendingAction] = useState(null); // null | "edit" | "status"
   const [actionError, setActionError] = useState("");
-  const [actionInfo, setActionInfo] = useState("");
   const isBusy = pendingAction !== null;
   const notice = location.state?.notice ?? "";
 
@@ -55,37 +54,24 @@ function FlightDetails({ id }) {
   }
 
   
+  // success, offline queue and errors are shown as toasts (store/listeners.js)
   async function handleChangeStatus(newStatus) {
     if (isBusy) return;
-    const flightId = flight.id;
-    const oldStatus = flight.status;
     setPendingAction("status");
     setActionError("");
-    setActionInfo("");
     try {
-      const { queued } = await changeStatus({ id: flightId, status: newStatus });
-      if (queued) {
-        setActionInfo("No connection: the change is saved on this device and will be sent automatically.");
-      }
-    } catch (err) {
-      setActionError(`Could not change status to "${newStatus}" (${err.message}). It was set back to "${oldStatus}".`);
+      await changeStatus({ id: flight.id, status: newStatus });
+    } catch {
+      // the status was set back by the reducer, the error toast explains why
     } finally {
       setPendingAction(null);
     }
   }
 
-  async function handleRemove() {
-    if (!window.confirm(`Remove flight ${flight.name}?`)) return;
-    const flightId = flight.id;
-    setPendingAction("delete");
-    setActionError("");
-    try {
-      await deleteFlight(flightId);
-      navigate("/flights", { replace: true });
-    } catch (err) {
-      setActionError(`Remove failed: ${err.message}`);
-      setPendingAction(null);
-    }
+  // no confirm() any more: the toast has Undo for 5 seconds
+  function handleRemove() {
+    removeFlight(flight);
+    navigate("/flights", { replace: true });
   }
 
   const links = (
@@ -162,7 +148,6 @@ function FlightDetails({ id }) {
     <CachedDataNotice cachedAt={cachedAt} />
       {notice && <StateMessage type="info" title={notice} />}
       {actionError && <StateMessage type="error" title={actionError} />}
-      {actionInfo && <StateMessage type="info" title={actionInfo} />}
 
       <div className="details-card">
         <div className="details-card__header">
@@ -218,7 +203,7 @@ function FlightDetails({ id }) {
                 Edit
               </button>
               <button className="btn btn--danger" onClick={handleRemove} disabled={isBusy}>
-                {pendingAction === "delete" ? "Removing…" : "Remove"}
+                Remove
               </button>
             </div>
           </>

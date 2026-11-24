@@ -169,3 +169,21 @@
     display: inline;
   }
 }
+/* Toasts on phones: full width at the bottom, buttons big enough to tap */
+@media (max-width: 640px) {
+  .toaster {
+    right: 8px;
+    left: 8px;
+    bottom: 8px;
+    width: auto;
+  }
+
+  .toast__undo,
+  .toast__close {
+    min-height: 44px;
+  }
+
+  .toast__close {
+    width: 44px;
+  }
+}
