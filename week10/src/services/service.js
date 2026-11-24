@@ -99,62 +99,14 @@ async function fetchAllDocuments() {
   return { flights: await withQueuedStatuses(flights), cachedAt };
 }
 
-function applyListParams(flights, params) {
-  const { search, status, terminal, airline, sort = "name" } = params;
-  const page = Number(params.page) || 1;
-  const limit = Number(params.limit) || 10;
-  let items = flights;
-
-  if (search) {
-    const q = search.toLowerCase();
-    items = items.filter((item) =>
-      [item.name, item.description, item.airline, item.destination]
-        .filter(Boolean)
-        .some((field) => String(field).toLowerCase().includes(q)),
-    );
-  }
-  if (status) items = items.filter((item) => item.status === status);
-  if (terminal) items = items.filter((item) => item.terminal === terminal);
-  if (airline) items = items.filter((item) => item.airline === airline);
-
-  items = [...items].sort((a, b) => {
-    switch (sort) {
-      case "name-desc":
-        return String(b.name).localeCompare(String(a.name));
-      case "departure":
-        return String(a.departureTime).localeCompare(String(b.departureTime));
-      case "departure-desc":
-        return String(b.departureTime).localeCompare(String(a.departureTime));
-      case "passengers-desc":
-        return (Number(b.passengers) || 0) - (Number(a.passengers) || 0);
-      case "name":
-      default:
-        return String(a.name).localeCompare(String(b.name));
-    }
-  });
-
-  const total = items.length;
-  const start = (page - 1) * limit;
-  return {
-    data: items.slice(start, start + limit),
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-  };
-}
 
 
-export async function getFlights(params) {
-  const { flights, cachedAt } = await fetchAllDocuments();
-  return { ...applyListParams(flights, params), cachedAt };
-}
+
+
 
 
 export async function getAllFlights() {
-  const { flights, cachedAt } = await fetchAllDocuments();
-  const sorted = applyListParams(flights, { sort: "departure", limit: flights.length || 1 }).data;
-  return { flights: sorted, cachedAt };
+  return fetchAllDocuments();
 }
 
 
