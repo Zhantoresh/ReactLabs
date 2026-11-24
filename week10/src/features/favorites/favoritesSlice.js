@@ -1,9 +1,9 @@
 import { createAsyncThunk, createSelector, createSlice } from "@reduxjs/toolkit";
 import { getFavorites, toggleFavorite as toggleFavoriteRequest } from "../../services/favorites.js";
 import { toRejectValue, withRetry } from "../../store/requestHelpers.js";
-import { selectAllFlights } from "../flights/flightsSelectors.js";
+import { selectVisibleFlights } from "../flights/flightsSelectors.js";
 
-
+// "My flights": ids of the flights the signed-in user saved with ☆ (one user at a time).
 const initialState = {
   uid: null, // whose list is loaded
   ids: [],
@@ -21,7 +21,7 @@ export const fetchFavorites = createAsyncThunk(
     }
   },
   {
-
+    // already loaded (or loading) for this user: no new request
     condition: (uid, { getState }) => {
       const { uid: loadedUid, status } = getState().favorites;
       if (loadedUid === uid && (status === "loading" || status === "succeeded")) return false;
@@ -61,7 +61,7 @@ const favoritesSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchFavorites.fulfilled, (state, action) => {
-        if (state.uid !== action.meta.arg) return; 
+        if (state.uid !== action.meta.arg) return; // another user logged in meanwhile
         state.ids = action.payload;
         state.status = "succeeded";
       })
@@ -77,7 +77,7 @@ const favoritesSlice = createSlice({
         if (state.uid === action.meta.arg.uid) state.ids = action.payload;
       })
       .addCase(toggleFavorite.rejected, (state, action) => {
-        state.ids = flip(state.ids, action.meta.arg.flightId);
+        state.ids = flip(state.ids, action.meta.arg.flightId); // rollback
       });
   },
 });
@@ -90,7 +90,7 @@ export const selectFavoritesState = (state) => state.favorites;
 export const selectFavoriteIds = (state) => state.favorites.ids;
 export const selectIsFavorite = (state, flightId) => state.favorites.ids.includes(Number(flightId));
 
-
-export const selectFavoriteFlights = createSelector([selectAllFlights, selectFavoriteIds], (flights, ids) =>
+// MEMOIZED: the saved flights themselves (My flights page), in departure order.
+export const selectFavoriteFlights = createSelector([selectVisibleFlights, selectFavoriteIds], (flights, ids) =>
   flights.filter((flight) => ids.includes(flight.id)),
 );

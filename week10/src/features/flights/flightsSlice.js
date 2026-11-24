@@ -31,6 +31,9 @@ const initialState = flightsAdapter.getInitialState({
   details: {},
   // optimistic status changes: { 12: "boarding" } = previous status, to roll back on error
   previousStatus: {},
+  // flights the user removed but can still restore with Undo: { 12: true }
+  // they are hidden by the selectors and really deleted after a few seconds (store/listeners.js)
+  pendingDeletion: {},
 });
 
 // ---------- thunks: reading ----------
@@ -139,7 +142,19 @@ export const deleteFlight = createAsyncThunk("flights/delete", async (id, { disp
 const flightsSlice = createSlice({
   name: "flights",
   initialState,
-  reducers: {},
+  reducers: {
+    // Remove button: hide the flight now, delete it on the server after the Undo time
+    deletionScheduled: {
+      reducer: (state, action) => {
+        state.pendingDeletion[action.payload.id] = true;
+      },
+      prepare: ({ id, name }) => ({ payload: { id: Number(id), name } }),
+    },
+    // Undo button: show the flight again, nothing is sent to the server
+    deletionCancelled: (state, action) => {
+      delete state.pendingDeletion[Number(action.payload)];
+    },
+  },
   // pending / fulfilled / rejected of every thunk
   extraReducers: (builder) => {
     builder
@@ -211,10 +226,15 @@ const flightsSlice = createSlice({
       })
       .addCase(deleteFlight.fulfilled, (state, action) => {
         flightsAdapter.removeOne(state, action.payload);
+        delete state.pendingDeletion[action.payload];
         state.details[String(action.payload)] = {
           status: "notfound",
           error: { message: `Flight #${action.payload} was deleted`, kind: "notfound" },
         };
+      })
+
+      .addCase(deleteFlight.rejected, (state, action) => {
+        delete state.pendingDeletion[Number(action.meta.arg)]; // not deleted: show it again
       })
 
       // ----- status: optimistic update -----
@@ -244,4 +264,5 @@ const flightsSlice = createSlice({
   },
 });
 
+export const { deletionScheduled, deletionCancelled } = flightsSlice.actions;
 export default flightsSlice.reducer;
