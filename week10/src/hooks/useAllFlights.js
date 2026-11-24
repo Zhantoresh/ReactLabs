@@ -1,32 +1,46 @@
-import { useQuery } from "@tanstack/react-query";
-import { getAllFlights, OfflineError } from "../services/service.js";
-import { flightKeys } from "../services/queryClient.js";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchFlights } from "../features/flights/flightsSlice.js";
+import {
+  selectAdjacentFlights,
+  selectAllFlights,
+  selectFlightsListState,
+} from "../features/flights/flightsSelectors.js";
 
 
 export function useAllFlights(options = {}) {
-  const query = useQuery({
-    queryKey: flightKeys.everything(),
-    queryFn: getAllFlights,
-    refetchInterval: options.refetchInterval,
-  });
+  const dispatch = useDispatch();
+  const flights = useSelector(selectAllFlights);
+  const list = useSelector(selectFlightsListState);
+  const { refetchInterval } = options;
 
+  useEffect(() => {
+    dispatch(fetchFlights());
+  }, [dispatch]);
+
+
+  useEffect(() => {
+    if (!refetchInterval) return;
+    const timer = setInterval(() => dispatch(fetchFlights({ force: true })), refetchInterval);
+    return () => clearInterval(timer);
+  }, [dispatch, refetchInterval]);
+
+  const hasData = flights.length > 0;
+  const failed = list.status === "failed";
   return {
-    flights: query.data?.flights ?? [],
-    status: query.isPending ? "loading" : query.isError && !query.data ? "error" : "success",
-    offline: query.error instanceof OfflineError && !query.data, // offline and nothing saved
-    error: query.error?.message ?? "",
-    updatedAt: query.dataUpdatedAt || null, 
-    isFetching: query.isFetching,
-    refreshFailed: query.isError && Boolean(query.data), 
-    cachedAt: query.data?.cachedAt ?? null, 
-    reload: () => query.refetch(),
+    flights,
+    status: !hasData && (list.status === "idle" || list.status === "loading") ? "loading" : failed && !hasData ? "error" : "success",
+    offline: failed && !hasData && list.error?.kind === "offline",
+    error: list.error?.message ?? "",
+    updatedAt: list.lastFetched,
+    isFetching: list.status === "loading",
+    refreshFailed: failed && hasData,
+    cachedAt: list.cachedAt,
+    reload: () => dispatch(fetchFlights({ force: true })),
   };
 }
 
 
 export function useAdjacentFlights(id) {
-  const { flights } = useAllFlights();
-  const index = flights.findIndex((flight) => flight.id === Number(id));
-  if (index === -1) return { prev: null, next: null };
-  return { prev: flights[index - 1] ?? null, next: flights[index + 1] ?? null };
+  return useSelector((state) => selectAdjacentFlights(state, id));
 }

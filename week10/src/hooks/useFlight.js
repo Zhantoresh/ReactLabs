@@ -1,25 +1,27 @@
-import { useQuery } from "@tanstack/react-query";
-import { getFlight, NotFoundError, OfflineError } from "../services/service.js";
-import { flightKeys } from "../services/queryClient.js";
-
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchFlightById } from "../features/flights/flightsSlice.js";
+import { selectFlightById, selectFlightDetailState } from "../features/flights/flightsSelectors.js";
 
 export function useFlight(id) {
-  const query = useQuery({
-    queryKey: flightKeys.detail(id),
-    queryFn: () => getFlight(id),
-  });
+  const dispatch = useDispatch();
+  const flight = useSelector((state) => selectFlightById(state, id));
+  const detail = useSelector((state) => selectFlightDetailState(state, id));
+
+  useEffect(() => {
+    dispatch(fetchFlightById({ id }));
+  }, [dispatch, id]);
 
   let status = "success";
-  if (query.isPending) status = "loading";
-  else if (query.error instanceof NotFoundError) status = "notfound";
-  else if (query.error instanceof OfflineError && !query.data) status = "offline"; 
-  else if (query.isError && !query.data) status = "error";
+  if (detail?.status === "notfound") status = "notfound";
+  else if (!flight && detail?.status === "failed") status = detail.error?.kind === "offline" ? "offline" : "error";
+  else if (!flight) status = "loading";
 
   return {
-    flight: query.data?.flight ?? null,
-    cachedAt: query.data?.cachedAt ?? null, 
+    flight: flight ?? null,
+    cachedAt: detail?.cachedAt ?? null,
     status,
-    error: query.error?.message ?? "",
-    reload: () => query.refetch(),
+    error: detail?.error?.message ?? "",
+    reload: () => dispatch(fetchFlightById({ id, force: true })),
   };
 }
