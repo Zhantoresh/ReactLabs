@@ -20,7 +20,8 @@ const ROUTES = [
 const STACK = [
   "React 19",
   "React Router",
-  "TanStack Query",
+  "Redux Toolkit",
+  "React Redux",
   "Firebase Authentication",
   "Firestore REST API",
   "Service Worker (no libraries)",
@@ -41,7 +42,7 @@ export default function AboutPage() {
           Departures Board is a small single-page application for an airport departures board. It started as the
           “Async React: Effects &amp; API” homework (week06) and was extended with React Router: separate pages, nested
           routes, dynamic URLs, filters stored in the URL and lazy-loaded pages, and then with Firebase Authentication
-          (email/password and Google) and server-data caching with TanStack Query. It also has protected routes and a
+          (email/password and Google) and server-data caching. It also has protected routes and a
           live departures board like the screens in the airport, optimistic status changes, saved flights per user,
           prefetching on hover, password reset and email verification.
         </p>
@@ -50,6 +51,11 @@ export default function AboutPage() {
           flight data from Firestore for offline use (network-first) and images and fonts (cache-first), shows when you
           are offline or looking at a saved copy, offers updates with one button, and the whole interface works on phones
           from 320px. Status changes made offline are queued and sent automatically when the connection returns.
+        </p>
+        <p>
+          In the last step the whole data layer moved to Redux Toolkit: one store with three feature slices (flights,
+          favorites, offline queue), async thunks for every request, normalized flights and memoized selectors, so
+          search, filters, sorting and pagination work on data that is already loaded and make no new requests.
         </p>
       </div>
 
@@ -92,7 +98,13 @@ export default function AboutPage() {
               <code>components/</code> — reusable UI (FlightCard, filters, pagination…)
             </li>
             <li>
-              <code>hooks/</code> — cached queries and mutations (TanStack Query), useAuth
+              <code>store/</code> — configureStore with three slices, shared helpers (retry, errors, freshness)
+            </li>
+            <li>
+              <code>features/</code> — Redux slices, async thunks and selectors: flights, favorites, outbox
+            </li>
+            <li>
+              <code>hooks/</code> — useSelector / useDispatch wrappers for the pages, useAuth, useDebouncedValue
             </li>
             <li>
               <code>context/</code> — AuthProvider: the Firebase user (onAuthStateChanged) for the whole app
@@ -107,14 +119,11 @@ export default function AboutPage() {
               <code>public/sw.js</code> — Service Worker: pre-cache, versioned caches, caching strategies
             </li>
             <li>
-              <code>services/serviceWorker.js</code>, <code>outbox.js</code>, <code>install.js</code> — updates,
-              offline queue, install button
+              <code>services/serviceWorker.js</code>, <code>install.js</code> — updates, install button;{" "}
+              <code>api/outboxDb.js</code> — IndexedDB for the offline queue
             </li>
             <li>
               <code>services/auth.js</code> + <code>firebase.js</code> — Firebase Authentication
-            </li>
-            <li>
-              <code>services/queryClient.js</code> — TanStack Query cache settings and query keys
             </li>
             <li>
               <code>styles/</code> — global, layout, component, page and mobile styles
