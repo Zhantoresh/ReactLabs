@@ -53,9 +53,11 @@ export default function AboutPage() {
           from 320px. Status changes made offline are queued and sent automatically when the connection returns.
         </p>
         <p>
-          In the last step the whole data layer moved to Redux Toolkit: one store with three feature slices (flights,
-          favorites, offline queue), async thunks for every request, normalized flights and memoized selectors, so
-          search, filters, sorting and pagination work on data that is already loaded and make no new requests.
+          In the last step the whole data layer moved to Redux Toolkit: one store with feature slices (flights,
+          favorites, offline queue, notifications), async thunks for every request, normalized flights and memoized
+          selectors, so search, filters, sorting and pagination work on data that is already loaded and make no new
+          requests. A listener middleware shows toast messages after every change and lets you undo a removed flight
+          for 5 seconds.
         </p>
       </div>
 
@@ -98,10 +100,10 @@ export default function AboutPage() {
               <code>components/</code> — reusable UI (FlightCard, filters, pagination…)
             </li>
             <li>
-              <code>store/</code> — configureStore with three slices, shared helpers (retry, errors, freshness)
+              <code>store/</code> — configureStore, listener middleware (toasts, Undo), helpers (retry, errors, freshness)
             </li>
             <li>
-              <code>features/</code> — Redux slices, async thunks and selectors: flights, favorites, outbox
+              <code>features/</code> — Redux slices, async thunks and selectors: flights, favorites, outbox, notifications
             </li>
             <li>
               <code>hooks/</code> — useSelector / useDispatch wrappers for the pages, useAuth, useDebouncedValue

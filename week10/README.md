@@ -1,7 +1,7 @@
 # Task 8 — Redux Toolkit (Departures Board)
 
 The departures board from the previous homeworks (React Router, Firebase Authentication, PWA) with its
-**whole data layer refactored to Redux Toolkit**: one store, three feature slices, async thunks for every
+**whole data layer refactored to Redux Toolkit**: one store, four feature slices, async thunks for every
 request and mutation, normalized flights and memoized selectors. TanStack Query was removed completely, so
 server data lives in one place only. Authentication stays in `AuthContext`, temporary form and UI state stays
 local in components. All features of week07–week09 are kept: protected routes, CRUD, the live board, the PWA
@@ -39,11 +39,13 @@ and the offline mode.
 ## Redux architecture
 
     src/
-      store/index.js               configureStore: flights + favorites + outbox
+      store/index.js               configureStore: flights + favorites + outbox + notifications
+      store/listeners.js           listener middleware: toasts, delete with Undo (bonus)
       store/requestHelpers.js      toRejectValue (error -> { message, kind }), withRetry, STALE_AFTER_MS
       features/flights/            flightsSlice.js (entity adapter, thunks, extraReducers), flightsSelectors.js
       features/favorites/          favoritesSlice.js (thunks, reducer, selectors)
       features/outbox/             outboxSlice.js (offline queue: thunks, selectors)
+      features/notifications/      notificationsSlice.js (toast messages, bonus)
       services/                    API only: Firestore REST, favorites, auth, Service Worker — no Redux
       hooks/                       useSelector / useDispatch wrappers used by the pages
       utils/flightList.js          pure filter / sort / paginate functions used by the selectors
@@ -68,6 +70,7 @@ What is **not** in Redux, on purpose:
 | `flights` | `createEntityAdapter` (`ids`, `entities`, sorted by departure time); `list: { status, error, lastFetched, cachedAt, requestId }`; `details[id]` with the same fields per flight; `previousStatus` for rollback | `fetchFlights`, `fetchFlightById`, `createFlight`, `updateFlight`, `changeFlightStatus`, `deleteFlight` |
 | `favorites` | `{ uid, ids, status, error }` — saved flights of the signed-in user | `fetchFavorites`, `toggleFavorite` (optimistic), reducer `favoritesCleared` (on logout) |
 | `outbox` | `{ items, loaded, flushing }` — status changes made offline (IndexedDB) | `loadOutbox`, `queueStatusChange`, `discardChange`, `flushOutbox` |
+| `notifications` | `{ items: [{ id, type, message, duration, undoDeleteId }] }` — toasts (bonus) | `notificationAdded` (with `prepare`), `notificationDismissed` |
 
 Flights are **normalized**: the list, the live board, the dashboard, the details page and "My flights" all read
 the same `entities`. Favorites keep only ids and get the flights through a selector, so nothing is duplicated.
@@ -81,7 +84,7 @@ the same `entities`. Favorites keep only ids and get the flights through a selec
 | `createFlight(values)` | mutation | POST | adds the flight, then `fetchFlights({ force: true })` |
 | `updateFlight({ id, changes })` | mutation | PATCH | updates the entity, then reloads |
 | `changeFlightStatus({ id, status, uid })` | mutation | PATCH | **optimistic**: `pending` sets the new status, `rejected` rolls back; offline → `queueStatusChange` |
-| `deleteFlight(id)` | mutation | DELETE | removes the entity, then reloads |
+| `deleteFlight(id)` | mutation | DELETE | removes the entity, then reloads; started by the Undo listener (bonus) |
 | `fetchFavorites(uid)`, `toggleFavorite({ uid, flightId })` | favorites | storage per user | `condition`: not again for the same uid |
 | `loadOutbox`, `queueStatusChange`, `discardChange`, `flushOutbox(uid)` | offline queue | IndexedDB + PATCH | `flushOutbox` runs once at a time (`condition: !flushing`) |
 
@@ -106,13 +109,14 @@ Pages call thunks through hooks; mutations use `.unwrap()` to get the result or 
 
 | Selector | Memoized | Used by |
 | --- | --- | --- |
-| `selectAllFlights`, `selectFlightByNumericId` | entity adapter | board, dashboard |
+| `selectAllFlights`, `selectFlightByNumericId` | entity adapter | base for the others |
+| `selectVisibleFlights` | **`createSelector`** | board, dashboard; input of all list selectors (hides flights waiting for Undo) |
 | `selectFlightsListState`, `selectFlightDetailState(state, id)`, `selectFlightById(state, id)` | — | list, details |
 | `selectFlightsPage(state, { search, status, terminal, sort, page, limit })` | **`createSelector`** | Flights page: filter → sort → paginate |
 | `selectAdjacentFlights(state, id)` | **`createSelector`** | previous / next departure on the details page |
 | `selectFavoriteFlights` | **`createSelector`** | "My flights" (favorite ids → flight objects) |
 | `selectOutboxItemsForUser(state, uid)` | **`createSelector`** | offline queue bar |
-| `selectFavoriteIds`, `selectIsFavorite(state, id)`, `selectOutboxFlushing` | — | ☆ button, queue bar |
+| `selectFavoriteIds`, `selectIsFavorite(state, id)`, `selectOutboxFlushing`, `selectNotifications` | — | ☆ button, queue bar, toasts |
 
 `selectFlightsPage` gets each parameter through its own input selector (primitive values), so the result is
 recalculated only when the flights or one of the filters change. Changing a filter, the sort or the page makes
@@ -123,6 +127,31 @@ recalculated only when the flights or one of the filters change. Changing a filt
 Search, status, terminal, sort and page live in the URL (`useSearchParams`), as before. The search box keeps the
 typed text in local state and writes it to the URL **400 ms after the last key press** (`hooks/useDebouncedValue.js`,
 `components/FlightFilters.jsx`). Reset filters and the Back button update the box from the URL.
+
+## Extra features (bonus): toasts and delete with Undo
+
+**Listener middleware** (`createListenerMiddleware`, `store/listeners.js`) runs side effects *after* an action
+reached the reducers, so components and slices stay simple:
+
+- **Toasts for thunk results** — one listener per success (`createFlight.fulfilled`, `updateFlight.fulfilled`,
+  `changeFlightStatus.fulfilled`, `toggleFavorite.fulfilled`) and one listener for several errors with
+  `isAnyOf(changeFlightStatus.rejected, deleteFlight.rejected, toggleFavorite.rejected)`. The texts are kept in the
+  `notifications` slice (plain serializable data) and shown by `components/Toaster.jsx` (`aria-live`, a countdown
+  line, full width on phones). Every toast closes itself: a listener on `notificationAdded` waits with
+  `listenerApi.delay(duration)` and dispatches `notificationDismissed`.
+- **Delete with Undo** instead of `window.confirm()`:
+  1. **Remove** dispatches `deletionScheduled({ id, name })`. The reducer puts the id into `pendingDeletion`;
+     the memoized `selectVisibleFlights` skips it, so the flight disappears from the list, the board,
+     the dashboard and My flights at once. No request yet.
+  2. The listener shows "Flight KC 935 removed · **Undo**" and waits with
+     `listenerApi.condition(deletionCancelled for this id, 5000)`.
+  3. **Undo** → `deletionCancelled(id)`: the flight is visible again and nothing was sent to the server.
+     No Undo in 5 s → `dispatch(deleteFlight(id))` sends DELETE. If it fails (for example offline),
+     `deleteFlight.rejected` removes the id from `pendingDeletion`, the flight comes back and an error toast explains why.
+
+Check: Flight details → **Remove** → the list shows 39 flights and the toast; **Undo** → 40 again and Network has no
+DELETE request; Remove again and wait 5 s → one DELETE request. In Redux DevTools:
+`flights/deletionScheduled` → `notifications/notificationAdded` → `flights/deletionCancelled` or `flights/delete/pending`.
 
 ## PWA (kept from week09)
 
