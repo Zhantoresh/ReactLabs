@@ -1,0 +1,171 @@
+/* Mobile version: navigation menu, touch-friendly controls, screens from 320px wide,
+   portrait and landscape. Loaded last in main.jsx, so these rules win over the desktop ones. */
+
+/* ---------- desktop: the ☰ button is hidden ---------- */
+.navbar__toggle {
+  display: none;
+}
+
+/* ---------- navigation: ☰ menu up to 900px ---------- */
+@media (max-width: 1080px) {
+  .navbar {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 10px 16px;
+  }
+
+  .navbar__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 22px;
+    cursor: pointer;
+  }
+
+  /* the links become a vertical list under the bar, shown only when the menu is open */
+  .navbar__links {
+    display: none;
+    flex-basis: 100%;
+    flex-direction: column;
+    flex-wrap: nowrap; /* one column even when the list is taller than the screen */
+    align-items: stretch;
+    gap: 2px;
+    padding: 8px 0 4px;
+    border-top: 1px solid var(--color-border);
+    max-height: calc(100vh - 70px); /* landscape phones: the menu scrolls instead of overflowing */
+    overflow-y: auto;
+  }
+
+  .navbar--open .navbar__links {
+    display: flex;
+  }
+
+  .navbar__link {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 16px;
+  }
+
+  .navbar__user {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    margin: 6px 0 0;
+    padding-top: 6px;
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+/* ---------- touch-friendly controls: at least 44 px high ---------- */
+@media (max-width: 600px), (pointer: coarse) {
+  .btn {
+    min-height: 44px;
+  }
+
+  .btn--small {
+    min-height: 40px;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+    font-size: 16px; /* 16 px: iPhone does not zoom into the field when it is focused */
+  }
+
+  .fav {
+    width: 44px;
+    height: 44px;
+  }
+
+  .board__tab {
+    min-height: 40px;
+  }
+
+  .pagination .btn {
+    min-width: 44px;
+  }
+}
+
+/* ---------- narrow screens ---------- */
+@media (max-width: 600px) {
+  .app__main {
+    padding: 16px 12px 32px;
+  }
+
+  /* page buttons ("+ New flight", "Reload") share the full width */
+  .page__actions {
+    width: 100%;
+  }
+
+  .page__actions .btn {
+    flex: 1;
+  }
+
+  .details-card__actions .btn,
+  .status-actions .btn {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .navbar__brand {
+    font-size: 16px;
+  }
+
+  /* live board: Time, Flight, Destination, Remarks — the gate column is hidden */
+  .board__row {
+    grid-template-columns: 44px 58px 1fr 78px;
+  }
+
+  .board__col--gate {
+    display: none;
+  }
+}
+
+
+@media (max-width: 360px) {
+  .net-status {
+    padding: 6px;
+  }
+
+  .net-status__text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* ---------- landscape phones: low screens ---------- */
+@media (max-height: 500px) and (orientation: landscape) {
+  .navbar {
+    position: static; /* a sticky bar would take too much of the 360 px height */
+  }
+
+  .app__main {
+    padding-top: 12px;
+  }
+}
+
+@media (max-width: 1080px) {
+  .install-button {
+    margin: 6px 0 0;
+  }
+
+  .install-button__more {
+    display: inline;
+  }
+}
