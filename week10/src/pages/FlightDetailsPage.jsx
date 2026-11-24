@@ -23,9 +23,9 @@ function FlightDetails({ id }) {
   const { user } = useAuth(); 
   const { flight, cachedAt, status, error, reload } = useFlight(id);
   const { prev, next } = useAdjacentFlights(id);
-  const updateMutation = useUpdateFlight();
-  const statusMutation = useChangeFlightStatus();
-  const deleteMutation = useDeleteFlight();
+  const updateFlight = useUpdateFlight();
+  const changeStatus = useChangeFlightStatus();
+  const deleteFlight = useDeleteFlight();
 
   const [isEditing, setIsEditing] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // null | "edit" | "status" | "delete"
@@ -45,7 +45,7 @@ function FlightDetails({ id }) {
     setPendingAction("edit");
     setActionError("");
     try {
-      await updateMutation.mutateAsync({ id: flightId, changes: values });
+      await updateFlight({ id: flightId, changes: values });
       setIsEditing(false);
     } catch (err) {
       setActionError(`Update failed: ${err.message}`);
@@ -63,7 +63,7 @@ function FlightDetails({ id }) {
     setActionError("");
     setActionInfo("");
     try {
-      const { queued } = await statusMutation.mutateAsync({ id: flightId, status: newStatus });
+      const { queued } = await changeStatus({ id: flightId, status: newStatus });
       if (queued) {
         setActionInfo("No connection: the change is saved on this device and will be sent automatically.");
       }
@@ -80,7 +80,7 @@ function FlightDetails({ id }) {
     setPendingAction("delete");
     setActionError("");
     try {
-      await deleteMutation.mutateAsync(flightId);
+      await deleteFlight(flightId);
       navigate("/flights", { replace: true });
     } catch (err) {
       setActionError(`Remove failed: ${err.message}`);
