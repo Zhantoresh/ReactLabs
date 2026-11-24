@@ -1,8 +1,23 @@
+import { useEffect, useState } from "react";
+import { useDebouncedValue } from "../hooks/useDebouncedValue.js";
 import { SORT_OPTIONS, STATUSES, TERMINALS } from "../utils/flights.js";
 
-// Controlled inputs: values come from the URL (via the page),
-// every change is sent back up with onChange(key, value).
 export default function FlightFilters({ search, status, terminal, sort, onChange, onReset }) {
+  const [draft, setDraft] = useState(search); 
+  const [urlSearch, setUrlSearch] = useState(search);
+  const debouncedDraft = useDebouncedValue(draft, 400);
+
+
+  if (search !== urlSearch) {
+    setUrlSearch(search);
+    setDraft(search);
+  }
+
+
+  useEffect(() => {
+    if (debouncedDraft !== search) onChange("search", debouncedDraft);
+  }, [debouncedDraft]);
+
   const hasFilters = search || status || terminal;
 
   return (
@@ -11,9 +26,9 @@ export default function FlightFilters({ search, status, terminal, sort, onChange
         Search
         <input
           type="search"
-          value={search}
+          value={draft}
           placeholder="Flight, city or airline…"
-          onChange={(event) => onChange("search", event.target.value)}
+          onChange={(event) => setDraft(event.target.value)}
         />
       </label>
 
